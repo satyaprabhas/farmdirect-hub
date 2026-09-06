@@ -1,0 +1,36 @@
+services:
+  # 1. The Node.js Backend Server
+  - type: web
+    name: farmdirect-backend
+    env: node
+    region: ohio
+    plan: free
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npx tsx src/index.ts
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: JWT_SECRET
+        generateValue: true
+      - key: FRONTEND_URL
+        value: https://farmdirect-frontend.onrender.com
+
+  # 2. The React Frontend Static Site
+  - type: web
+    name: farmdirect-frontend
+    env: static
+    region: ohio
+    plan: free
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        value: https://farmdirect-backend.onrender.com/api
+      - key: VITE_UPLOADS_URL
+        value: https://farmdirect-backend.onrender.com/uploads
