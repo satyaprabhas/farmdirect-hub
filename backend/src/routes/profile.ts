@@ -20,7 +20,21 @@ router.get('/', (req: AuthRequest, res) => {
 });
 
 router.put('/', (req: AuthRequest, res) => {
-  const { full_name, mobile_number, email, address, village, district, state, pincode, ...profile } = req.body;
+  const full_name = req.body.full_name || req.body.name || null;
+  const mobile_number = req.body.mobile_number || req.body.mobile || null;
+  const email = req.body.email || null;
+  const address = req.body.address || null;
+  const village = req.body.village || null;
+  const district = req.body.district || null;
+  const state = req.body.state || null;
+  const pincode = req.body.pincode || null;
+  const farm_name = req.body.farm_name || null;
+  const farm_type = req.body.farm_type || null;
+  const bank_name = req.body.bank_name || null;
+  const account_number = req.body.account_number || null;
+  const ifsc_code = req.body.ifsc_code || null;
+  const account_holder_name = req.body.account_holder_name || req.body.account_holder || null;
+
   try {
     db.transaction(() => {
       db.prepare(`
@@ -46,7 +60,7 @@ router.put('/', (req: AuthRequest, res) => {
             ifsc_code = COALESCE(?, ifsc_code), 
             account_holder_name = COALESCE(?, account_holder_name)
           WHERE user_id = ?
-        `).run(profile.farm_name, profile.farm_type, profile.bank_name, profile.account_number, profile.ifsc_code, profile.account_holder_name, req.user.id);
+        `).run(farm_name, farm_type, bank_name, account_number, ifsc_code, account_holder_name, req.user.id);
       }
     })();
     res.json({ success: true });
