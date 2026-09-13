@@ -33,10 +33,26 @@ export default function Marketplace() {
   const [sortBy, setSortBy] = useState('Recommended');
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const [vegetableOptions, setVegetableOptions] = useState<string[]>([]);
   
   const { addToCart } = useCart();
   const { showToast } = useToast();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    api.get('/products/vegetables')
+      .then(res => {
+        const names = (res.data || []).map((v: any) => v.name);
+        if (names.length > 0) setVegetableOptions(names);
+      })
+      .catch(() => {
+        setVegetableOptions([
+          'Tomatoes', 'Ladies Finger', 'Cucumbers', 'Spinach', 'Bottle Gourd', 
+          'Carrots', 'Brinjal', 'Potatoes', 'Onions', 'Ridge Gourd', 
+          'Bitter Gourd', 'Tindora', 'Cauliflower', 'Beans', 'Drumstick'
+        ]);
+      });
+  }, []);
 
   useEffect(() => {
     fetchProducts();
@@ -134,10 +150,13 @@ export default function Marketplace() {
                 onChange={(e) => setSelectedVeg(e.target.value)}
               >
                 <option value="All">All Vegetables</option>
-                <option value="Tomatoes">Tomatoes</option>
-                <option value="Onions">Onions</option>
-                <option value="Potatoes">Potatoes</option>
-                <option value="Carrots">Carrots</option>
+                {(vegetableOptions.length > 0 ? vegetableOptions : [
+                  'Tomatoes', 'Ladies Finger', 'Cucumbers', 'Spinach', 'Bottle Gourd', 
+                  'Carrots', 'Brinjal', 'Potatoes', 'Onions', 'Ridge Gourd', 
+                  'Bitter Gourd', 'Tindora', 'Cauliflower', 'Beans', 'Drumstick'
+                ]).map(name => (
+                  <option key={name} value={name}>{name}</option>
+                ))}
               </select>
             </div>
 

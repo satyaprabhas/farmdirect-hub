@@ -30,22 +30,58 @@ const AddProduce: React.FC = () => {
   const [pincode, setPincode] = useState(user?.pincode || '');
   const [images, setImages] = useState<File[]>([]);
 
+  const vegColors: Record<string, string> = {
+    'Tomato': 'bg-red-50 text-red-700 border-red-200',
+    'Tomatoes': 'bg-red-50 text-red-700 border-red-200',
+    'Onion': 'bg-orange-50 text-orange-700 border-orange-200',
+    'Onions': 'bg-orange-50 text-orange-700 border-orange-200',
+    'Potato': 'bg-yellow-50 text-yellow-700 border-yellow-200',
+    'Potatoes': 'bg-yellow-50 text-yellow-700 border-yellow-200',
+    'Cabbage': 'bg-green-50 text-green-700 border-green-200',
+    'Carrot': 'bg-orange-50 text-orange-700 border-orange-200',
+    'Carrots': 'bg-orange-50 text-orange-700 border-orange-200',
+    'Spinach': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    'Cucumbers': 'bg-green-50 text-green-700 border-green-200',
+    'Ladies Finger': 'bg-teal-50 text-teal-700 border-teal-200',
+    'Bottle Gourd': 'bg-lime-50 text-lime-700 border-lime-200',
+    'Brinjal': 'bg-purple-50 text-purple-700 border-purple-200',
+    'Ridge Gourd': 'bg-emerald-50 text-emerald-800 border-emerald-300',
+    'Bitter Gourd': 'bg-green-100 text-green-800 border-green-300',
+    'Tindora': 'bg-teal-50 text-teal-800 border-teal-300',
+    'Cauliflower': 'bg-stone-50 text-stone-700 border-stone-300',
+    'Beans': 'bg-lime-100 text-lime-800 border-lime-300',
+    'Drumstick': 'bg-emerald-100 text-emerald-900 border-emerald-400',
+  };
+
   useEffect(() => {
     const fetchVegetables = async () => {
       try {
         setLoading(true);
-        // Fetch active vegetables (using admin endpoint or a generic one)
         const response = await api.get('/farmer/vegetables').catch(() => api.get('/products/vegetables'));
-        setVegetables(response.data.data || response.data);
+        const rawList = response.data.data || response.data || [];
+        const list = rawList.map((v: any) => ({
+          ...v,
+          color: vegColors[v.name] || 'bg-green-50 text-green-700 border-green-200'
+        }));
+        setVegetables(list);
       } catch (error) {
         console.error('Error fetching vegetables:', error);
-        // Fallback for UI if API fails
         setVegetables([
-          { id: '1', name: 'Tomato', admin_price: 35, unit: 'kg', color: 'bg-red-50 text-red-700 border-red-200' },
-          { id: '2', name: 'Onion', admin_price: 25, unit: 'kg', color: 'bg-orange-50 text-orange-700 border-orange-200' },
-          { id: '3', name: 'Potato', admin_price: 20, unit: 'kg', color: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
-          { id: '4', name: 'Cabbage', admin_price: 15, unit: 'piece', color: 'bg-green-50 text-green-700 border-green-200' },
-          { id: '5', name: 'Carrot', admin_price: 40, unit: 'kg', color: 'bg-orange-50 text-orange-700 border-orange-200' },
+          { id: '1', name: 'Tomatoes', admin_price: 25, unit: 'kg', color: vegColors['Tomatoes'] },
+          { id: '2', name: 'Ladies Finger', admin_price: 30, unit: 'kg', color: vegColors['Ladies Finger'] },
+          { id: '3', name: 'Cucumbers', admin_price: 20, unit: 'kg', color: vegColors['Cucumbers'] },
+          { id: '4', name: 'Spinach', admin_price: 15, unit: 'bunch', color: vegColors['Spinach'] },
+          { id: '5', name: 'Bottle Gourd', admin_price: 18, unit: 'kg', color: vegColors['Bottle Gourd'] },
+          { id: '6', name: 'Carrots', admin_price: 28, unit: 'kg', color: vegColors['Carrots'] },
+          { id: '7', name: 'Brinjal', admin_price: 35, unit: 'kg', color: vegColors['Brinjal'] },
+          { id: '8', name: 'Potatoes', admin_price: 30, unit: 'kg', color: vegColors['Potatoes'] },
+          { id: '9', name: 'Onions', admin_price: 35, unit: 'kg', color: vegColors['Onions'] },
+          { id: '10', name: 'Ridge Gourd', admin_price: 40, unit: 'kg', color: vegColors['Ridge Gourd'] },
+          { id: '11', name: 'Bitter Gourd', admin_price: 45, unit: 'kg', color: vegColors['Bitter Gourd'] },
+          { id: '12', name: 'Tindora', admin_price: 35, unit: 'kg', color: vegColors['Tindora'] },
+          { id: '13', name: 'Cauliflower', admin_price: 30, unit: 'kg', color: vegColors['Cauliflower'] },
+          { id: '14', name: 'Beans', admin_price: 50, unit: 'kg', color: vegColors['Beans'] },
+          { id: '15', name: 'Drumstick', admin_price: 60, unit: 'kg', color: vegColors['Drumstick'] },
         ]);
       } finally {
         setLoading(false);

@@ -60,6 +60,12 @@ export async function seedDatabase() {
   const bottleGourdId = insertVeg.run('Bottle Gourd', 18, 'kg').lastInsertRowid;
   const carrotsId = insertVeg.run('Carrots', 28, 'kg').lastInsertRowid;
   const brinjalId = insertVeg.run('Brinjal', 35, 'kg').lastInsertRowid;
+  const ridgeGourdId = insertVeg.run('Ridge Gourd', 40, 'kg').lastInsertRowid;
+  const bitterGourdId = insertVeg.run('Bitter Gourd', 45, 'kg').lastInsertRowid;
+  const tindoraId = insertVeg.run('Tindora', 35, 'kg').lastInsertRowid;
+  const cauliflowerId = insertVeg.run('Cauliflower', 30, 'kg').lastInsertRowid;
+  const beansId = insertVeg.run('Beans', 50, 'kg').lastInsertRowid;
+  const drumstickId = insertVeg.run('Drumstick', 60, 'kg').lastInsertRowid;
   insertVeg.run('Potatoes', 30, 'kg');
   insertVeg.run('Onions', 35, 'kg');
 
@@ -71,12 +77,18 @@ export async function seedDatabase() {
   
   insertProduce.run(farmer1Id, tomatoesId, 50, 'kg', 'Sri Sai Farms', 'Chittoor Market Area', 'Chittoor', 'Chittoor', 'Andhra Pradesh', '517001');
   insertProduce.run(farmer1Id, carrotsId, 30, 'kg', 'Sri Sai Farms', 'Chittoor Market Area', 'Chittoor', 'Chittoor', 'Andhra Pradesh', '517001');
+  insertProduce.run(farmer1Id, ridgeGourdId, 25, 'kg', 'Sri Sai Farms', 'Chittoor Market Area', 'Chittoor', 'Chittoor', 'Andhra Pradesh', '517001');
+  insertProduce.run(farmer1Id, tindoraId, 20, 'kg', 'Sri Sai Farms', 'Chittoor Market Area', 'Chittoor', 'Chittoor', 'Andhra Pradesh', '517001');
   
   insertProduce.run(farmer2Id, cucumbersId, 40, 'kg', 'Fresh Fields', 'Beach Road', 'Vizag', 'Visakhapatnam', 'Andhra Pradesh', '530001');
   insertProduce.run(farmer2Id, spinachId, 25, 'bunch', 'Fresh Fields', 'Beach Road', 'Vizag', 'Visakhapatnam', 'Andhra Pradesh', '530001');
+  insertProduce.run(farmer2Id, cauliflowerId, 30, 'kg', 'Fresh Fields', 'Beach Road', 'Vizag', 'Visakhapatnam', 'Andhra Pradesh', '530001');
+  insertProduce.run(farmer2Id, beansId, 15, 'kg', 'Fresh Fields', 'Beach Road', 'Vizag', 'Visakhapatnam', 'Andhra Pradesh', '530001');
   
   insertProduce.run(farmer3Id, ladiesFingerId, 35, 'kg', 'Green Leaf Farms', 'Main Road', 'Kakinada', 'East Godavari', 'Andhra Pradesh', '533001');
   insertProduce.run(farmer3Id, brinjalId, 20, 'kg', 'Green Leaf Farms', 'Main Road', 'Kakinada', 'East Godavari', 'Andhra Pradesh', '533001');
+  insertProduce.run(farmer3Id, bitterGourdId, 20, 'kg', 'Green Leaf Farms', 'Main Road', 'Kakinada', 'East Godavari', 'Andhra Pradesh', '533001');
+  insertProduce.run(farmer3Id, drumstickId, 25, 'kg', 'Green Leaf Farms', 'Main Road', 'Kakinada', 'East Godavari', 'Andhra Pradesh', '533001');
 
   console.log('✅ Seed completed successfully!');
 }

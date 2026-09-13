@@ -25,6 +25,10 @@ router.get('/', (req, res) => {
       query += ` AND fp.vegetable_id = ?`;
       params.push(vegetable_id);
     }
+    if (req.query.vegetable && req.query.vegetable !== 'All') {
+      query += ` AND v.name = ?`;
+      params.push(req.query.vegetable);
+    }
     if (location) {
       query += ` AND (fp.village LIKE ? OR fp.district LIKE ? OR fp.state LIKE ?)`;
       params.push(`%${location}%`, `%${location}%`, `%${location}%`);
@@ -44,6 +48,15 @@ router.get('/', (req, res) => {
     });
     
     res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.get('/vegetables', (req, res) => {
+  try {
+    const vegetables = db.prepare("SELECT * FROM vegetables WHERE is_active = 1 ORDER BY name ASC").all();
+    res.json(vegetables);
   } catch (err) {
     res.status(500).json({ error: 'Internal server error' });
   }
