@@ -29,17 +29,33 @@ const PriceManagement: React.FC = () => {
 
   useEffect(() => {
     fetchVegetables();
+
+    const interval = setInterval(() => {
+      fetchVegetables(true);
+    }, 10000);
+
+    const handleFocus = () => {
+      fetchVegetables(true);
+    };
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleFocus);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
+    };
   }, []);
 
-  const fetchVegetables = async () => {
+  const fetchVegetables = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const response = await api.get('/admin/vegetables');
       setVegetables(response.data);
     } catch (error) {
-      showToast('Failed to load vegetables', 'error');
+      if (!silent) showToast('Failed to load vegetables', 'error');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 

@@ -56,11 +56,28 @@ export default function Marketplace() {
 
   useEffect(() => {
     fetchProducts();
+
+    // Auto-sync in background every 10s so additions on other devices appear live
+    const interval = setInterval(() => {
+      fetchProducts(true);
+    }, 10000);
+
+    const handleFocus = () => {
+      fetchProducts(true);
+    };
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleFocus);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
+    };
   }, [searchQuery, selectedVeg, location, sortBy, verifiedOnly]);
 
-  const fetchProducts = async () => {
+  const fetchProducts = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const params = new URLSearchParams();
       if (searchQuery) params.append('search', searchQuery);
       if (selectedVeg !== 'All') params.append('vegetable', selectedVeg);
@@ -71,17 +88,21 @@ export default function Marketplace() {
       const response = await api.get(`/products?${params.toString()}`);
       setProducts(response.data || []);
       
-      // Initialize quantities
-      const initialQuantities: Record<string, number> = {};
-      (response.data || []).forEach((p: Product) => {
-        initialQuantities[p.id] = 1;
+      // Initialize quantities for any newly added products
+      setQuantities(prev => {
+        const next = { ...prev };
+        (response.data || []).forEach((p: Product) => {
+          if (!next[p.id]) next[p.id] = 1;
+        });
+        return next;
       });
-      setQuantities(initialQuantities);
     } catch (error) {
-      console.error('Failed to fetch products:', error);
-      showToast('error', 'Failed to load marketplace data');
+      if (!silent) {
+        console.error('Failed to fetch products:', error);
+        showToast('error', 'Failed to load marketplace data');
+      }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 

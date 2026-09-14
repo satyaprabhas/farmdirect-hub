@@ -23,21 +23,39 @@ const MyProduce: React.FC = () => {
   const [deleteItem, setDeleteItem] = useState<any>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
-  const fetchProduce = async () => {
+  const fetchProduce = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const response = await api.get('/farmer/produce');
       setProduce(response.data.data || response.data);
     } catch (err) {
-      console.error('Error fetching produce:', err);
-      setError('Failed to load your produce listings.');
+      if (!silent) {
+        console.error('Error fetching produce:', err);
+        setError('Failed to load your produce listings.');
+      }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchProduce();
+
+    const interval = setInterval(() => {
+      fetchProduce(true);
+    }, 10000);
+
+    const handleFocus = () => {
+      fetchProduce(true);
+    };
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleFocus);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
+    };
   }, []);
 
   const handleEditClick = (item: any) => {

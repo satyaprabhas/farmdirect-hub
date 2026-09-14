@@ -8,6 +8,7 @@ dotenv.config({ path: path.join(__dirname, '../../.env') });
 
 import { initDb } from './database/db';
 import { initializeDatabase } from './database/schema';
+import { ensureVegetablesAndStock } from './database/ensureData';
 import authRoutes from './routes/auth';
 import adminRoutes from './routes/admin';
 import farmerRoutes from './routes/farmer';
@@ -60,6 +61,7 @@ app.get('/api/health', (req, res) => { res.json({ status: 'ok', message: 'FarmDi
 async function startServer() {
   await initDb();
   initializeDatabase();
+  ensureVegetablesAndStock();
   app.listen(PORT, () => {
     console.log(`🌱 FarmDirect Hub Backend running on http://localhost:${PORT}`);
   });

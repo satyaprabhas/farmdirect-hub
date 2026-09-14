@@ -25,17 +25,33 @@ const AdminProducts: React.FC = () => {
 
   useEffect(() => {
     fetchProducts();
+
+    const interval = setInterval(() => {
+      fetchProducts(true);
+    }, 10000);
+
+    const handleFocus = () => {
+      fetchProducts(true);
+    };
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleFocus);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
+    };
   }, []);
 
-  const fetchProducts = async () => {
+  const fetchProducts = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const response = await api.get('/products');
       setProducts(response.data);
     } catch (error) {
-      showToast('Failed to load products', 'error');
+      if (!silent) showToast('Failed to load products', 'error');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 

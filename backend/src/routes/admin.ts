@@ -61,8 +61,24 @@ router.get('/vegetables', (req, res) => {
 router.post('/vegetables', (req, res) => {
   const { name, current_price, unit } = req.body;
   try {
-    const info = db.prepare("INSERT INTO vegetables (name, current_price, unit) VALUES (?, ?, ?)").run(name, current_price, unit);
-    res.json({ id: info.lastInsertRowid, name, current_price, unit });
+    let vegId: number = 0;
+    db.transaction(() => {
+      const info = db.prepare("INSERT INTO vegetables (name, current_price, unit, is_active) VALUES (?, ?, ?, 1)").run(name, current_price, unit || 'kg');
+      vegId = info.lastInsertRowid;
+
+      // Automatically create an initial active listing so it immediately shows in the marketplace
+      let farmer: any = db.prepare("SELECT id, village, district, state, pincode FROM users WHERE role = 'FARMER' AND is_verified = 1 LIMIT 1").get();
+      if (!farmer) {
+        farmer = db.prepare("SELECT id, village, district, state, pincode FROM users WHERE role = 'FARMER' LIMIT 1").get();
+      }
+      if (farmer) {
+        db.prepare(`
+          INSERT INTO farmer_produce (farmer_id, vegetable_id, available_quantity, unit, farm_name, farm_location, village, district, state, pincode, status)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE')
+        `).run(farmer.id, vegId, 50, unit || 'kg', 'Sri Sai Organic Farm', farmer.village || 'Chittoor', farmer.village || 'Chittoor', farmer.district || 'Chittoor', farmer.state || 'Andhra Pradesh', farmer.pincode || '517001');
+      }
+    })();
+    res.json({ id: vegId, name, current_price, unit: unit || 'kg' });
   } catch (err: any) {
     if (err.message && err.message.includes('UNIQUE')) return res.status(400).json({ error: 'Vegetable exists' });
     res.status(500).json({ error: 'Internal server error' });
