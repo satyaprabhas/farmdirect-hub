@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useToast } from '../../context/ToastContext';
+import { useLanguage } from '../../context/LanguageContext';
 import api from '../../api/client';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import Modal from '../../components/common/Modal';
@@ -17,6 +18,7 @@ interface Vegetable {
 
 const PriceManagement: React.FC = () => {
   const { showToast } = useToast();
+  const { t, translateVeg, language } = useLanguage();
   const [vegetables, setVegetables] = useState<Vegetable[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -142,15 +144,15 @@ const PriceManagement: React.FC = () => {
     <div className="animate-fade-in space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Vegetable Price Management</h1>
-          <p className="text-gray-500">Control prices for all vegetables in the marketplace</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('admin.priceManagement', 'Vegetable Price Management')}</h1>
+          <p className="text-gray-500">{t('admin.priceControlDesc', 'Control prices for all vegetables in the marketplace')}</p>
         </div>
         <button
           onClick={() => handleOpenModal()}
           className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors"
         >
           <Plus className="w-4 h-4" />
-          <span>Add New Vegetable</span>
+          <span>{t('admin.addVegetable', 'Add New Vegetable')}</span>
         </button>
       </div>
 
@@ -160,30 +162,30 @@ const PriceManagement: React.FC = () => {
             <thead className="text-xs text-gray-700 uppercase bg-gray-50 rounded-lg">
               <tr>
                 <th className="px-4 py-3">#</th>
-                <th className="px-4 py-3">Vegetable</th>
-                <th className="px-4 py-3">Current Price (₹)</th>
-                <th className="px-4 py-3">Unit</th>
-                <th className="px-4 py-3">Last Updated</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3 text-right">Actions</th>
+                <th className="px-4 py-3">{t('admin.vegetableName', 'Vegetable')}</th>
+                <th className="px-4 py-3">{t('admin.currentPrice', 'Current Price (₹)')}</th>
+                <th className="px-4 py-3">{t('admin.unit', 'Unit')}</th>
+                <th className="px-4 py-3">{t('admin.lastUpdated', 'Last Updated')}</th>
+                <th className="px-4 py-3">{t('admin.status', 'Status')}</th>
+                <th className="px-4 py-3 text-right">{t('admin.actions', 'Actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {vegetables.map((veg, index) => (
                 <tr key={veg.id} className="hover:bg-gray-50/50">
                   <td className="px-4 py-3">{index + 1}</td>
-                  <td className="px-4 py-3 font-medium text-gray-900">{veg.name}</td>
+                  <td className="px-4 py-3 font-medium text-gray-900">{translateVeg(veg.name)}</td>
                   <td className="px-4 py-3 text-green-600 font-semibold">₹{veg.current_price}</td>
-                  <td className="px-4 py-3">{veg.unit}</td>
+                  <td className="px-4 py-3">{t(`unit.${veg.unit}`, veg.unit)}</td>
                   <td className="px-4 py-3">{new Date(veg.updated_at).toLocaleString()}</td>
                   <td className="px-4 py-3">
                     <span className={`px-2 py-1 text-xs rounded-full font-medium ${veg.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                      {veg.is_active ? 'Active' : 'Inactive'}
+                      {veg.is_active ? t('status.ACTIVE', 'Active') : t('status.INACTIVE', 'Inactive')}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end space-x-2">
-                      <button onClick={() => handleOpenModal(veg)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit">
+                      <button onClick={() => handleOpenModal(veg)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title={t('common.edit', 'Edit')}>
                         <Pencil className="w-4 h-4" />
                       </button>
                       <button onClick={() => handleToggleActive(veg)} className={`p-1.5 rounded-lg transition-colors ${veg.is_active ? 'text-red-600 hover:bg-red-50' : 'text-green-600 hover:bg-green-50'}`} title="Toggle Status">
@@ -198,10 +200,10 @@ const PriceManagement: React.FC = () => {
         </div>
       </div>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingVeg ? "Edit Vegetable" : "Add New Vegetable"}>
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingVeg ? t('admin.editVegetable', 'Edit Vegetable') : t('admin.addVegetable', 'Add New Vegetable')}>
         <form onSubmit={handleSubmitModal} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Vegetable Name</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.vegetableName', 'Vegetable Name')}</label>
             <input
               type="text"
               value={formData.name}
@@ -212,7 +214,7 @@ const PriceManagement: React.FC = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Price (₹)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.updatePrice', 'Price (₹)')}</label>
             <input
               type="number"
               value={formData.current_price}
@@ -224,21 +226,21 @@ const PriceManagement: React.FC = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Unit</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.unit', 'Unit')}</label>
             <select
               value={formData.unit}
               onChange={(e) => setFormData({...formData, unit: e.target.value})}
               className="w-full rounded-xl border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-green-500 focus:border-transparent"
             >
-              <option value="kg">kg</option>
-              <option value="bunch">bunch</option>
-              <option value="piece">piece</option>
-              <option value="dozen">dozen</option>
+              <option value="kg">{t('unit.kg', 'kg')}</option>
+              <option value="bunch">{t('unit.bunch', 'bunch')}</option>
+              <option value="piece">{t('unit.piece', 'piece')}</option>
+              <option value="dozen">{t('unit.dozen', 'dozen')}</option>
             </select>
           </div>
           <div className="flex justify-end space-x-3 pt-4">
-            <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50">Cancel</button>
-            <button type="submit" className="px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700">Save</button>
+            <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50">{t('common.cancel', 'Cancel')}</button>
+            <button type="submit" className="px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700">{t('common.save', 'Save')}</button>
           </div>
         </form>
       </Modal>
@@ -247,13 +249,18 @@ const PriceManagement: React.FC = () => {
         isOpen={isConfirmOpen}
         onClose={() => setIsConfirmOpen(false)}
         onConfirm={handleConfirmAction}
-        title="Confirm Action"
+        title={t('common.confirm', 'Confirm Action')}
         message={
           confirmAction?.type === 'price'
-            ? `Change price of ${confirmAction.veg?.name} from ₹${confirmAction.veg?.current_price} to ₹${confirmAction.newPrice}? This will affect all active listings.`
-            : `Are you sure you want to ${confirmAction?.veg?.is_active ? 'deactivate' : 'activate'} ${confirmAction?.veg?.name}?`
+            ? (language === 'te'
+                ? `${translateVeg(confirmAction.veg?.name || '')} ధరను ₹${confirmAction.veg?.current_price} నుండి ₹${confirmAction.newPrice}కు మార్చాలా? ఇది అన్ని యాక్టివ్ లిస్టింగ్‌లపై ప్రభావం చూపుతుంది.`
+                : `Change price of ${confirmAction.veg?.name} from ₹${confirmAction.veg?.current_price} to ₹${confirmAction.newPrice}? This will affect all active listings.`)
+            : (language === 'te'
+                ? `మీరు ${translateVeg(confirmAction?.veg?.name || '')}ను ఖచ్చితంగా ${confirmAction?.veg?.is_active ? 'నిలిపివేయాలనుకుంటున్నారా' : 'యాక్టివేట్ చేయాలనుకుంటున్నారా'}?`
+                : `Are you sure you want to ${confirmAction?.veg?.is_active ? 'deactivate' : 'activate'} ${confirmAction?.veg?.name}?`)
         }
-        confirmText="Confirm"
+        confirmText={t('common.confirm', 'Confirm')}
+        cancelText={t('common.cancel', 'Cancel')}
         type={confirmAction?.type === 'toggle' && confirmAction?.veg?.is_active ? 'danger' : 'primary'}
       />
     </div>

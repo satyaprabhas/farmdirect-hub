@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Sprout, Edit2, Trash2, Plus, Image as ImageIcon } from 'lucide-react';
 import api, { getImageUrl } from '../../api/client';
 import { useToast } from '../../context/ToastContext';
+import { useLanguage } from '../../context/LanguageContext';
 import StatusBadge from '../../components/common/StatusBadge';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import EmptyState from '../../components/common/EmptyState';
@@ -13,6 +14,7 @@ import ConfirmationDialog from '../../components/common/ConfirmationDialog';
 const MyProduce: React.FC = () => {
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { t, translateVeg, language } = useLanguage();
   const [produce, setProduce] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -102,24 +104,28 @@ const MyProduce: React.FC = () => {
     <div className="space-y-6 animate-fade-in pb-12">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">My Produce</h1>
-          <p className="text-gray-600 dark:text-gray-300">Manage your listed vegetables</p>
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
+            {t('farmer.myProduce', 'My Produce')}
+          </h1>
+          <p className="text-gray-600 dark:text-gray-300">
+            {t('farmer.manageProduce', 'Manage your listed vegetables')}
+          </p>
         </div>
         <button
           onClick={() => navigate('/farmer/add-produce')}
           className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors shadow-sm"
         >
           <Plus size={20} />
-          Add New Produce
+          {t('farmer.addNewProduce', 'Add New Produce')}
         </button>
       </div>
 
       {produce.length === 0 ? (
         <EmptyState 
           icon={Sprout}
-          title="You haven't listed any produce yet"
-          message="Start by adding your first harvest! It will be visible to consumers looking for fresh vegetables."
-          actionLabel="Add Produce"
+          title={t('farmer.noProduceListed', "You haven't listed any produce yet")}
+          message={t('farmer.noProduceListedDesc', "Start by adding your first harvest! It will be visible to consumers looking for fresh vegetables.")}
+          actionLabel={t('farmer.addNewProduce', 'Add Produce')}
           onAction={() => navigate('/farmer/add-produce')}
         />
       ) : (
@@ -130,7 +136,7 @@ const MyProduce: React.FC = () => {
                 {item.images && item.images.length > 0 ? (
                   <img 
                     src={getImageUrl(item.images[0])} 
-                    alt={item.vegetable_name} 
+                    alt={translateVeg(item.vegetable_name)} 
                     className="w-full h-full object-cover"
                   />
                 ) : (
@@ -144,27 +150,29 @@ const MyProduce: React.FC = () => {
               </div>
               
               <div className="p-5">
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{item.vegetable_name}</h3>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                  {translateVeg(item.vegetable_name)}
+                </h3>
                 
                 <div className="space-y-2 mb-4 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-gray-500 dark:text-gray-400">Available Qty:</span>
-                    <span className="font-semibold text-gray-900 dark:text-white">{item.available_quantity} {item.unit}</span>
+                    <span className="text-gray-500 dark:text-gray-400">{t('farmer.availableQty', 'Available Qty:')}</span>
+                    <span className="font-semibold text-gray-900 dark:text-white">{item.available_quantity} {t(`unit.${item.unit}`, item.unit)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-500 dark:text-gray-400">Your Earning Price:</span>
+                    <span className="text-gray-500 dark:text-gray-400">{t('farmer.yourPriceLabel', 'Your Earning Price:')}</span>
                     <span className="font-semibold text-gray-900 dark:text-white">
-                      ₹{Math.round((item.price || item.current_price || 0) * 0.85)}/{item.unit}
+                      ₹{Math.round((item.price || item.current_price || 0) * 0.85)}/{t(`unit.${item.unit}`, item.unit)}
                     </span>
                   </div>
                   <div className="flex justify-between bg-green-50 dark:bg-green-900/20 p-2 rounded mt-2">
-                    <span className="text-green-700 dark:text-green-400 font-medium">Est. Value:</span>
+                    <span className="text-green-700 dark:text-green-400 font-medium">{t('farmer.estValueLabel', 'Est. Value:')}</span>
                     <span className="font-bold text-green-700 dark:text-green-400">
                       ₹{Math.round((item.price || item.current_price || 0) * 0.85 * item.available_quantity)}
                     </span>
                   </div>
                   <div className="text-xs text-gray-400 mt-2">
-                    Listed on: {new Date(item.created_at).toLocaleDateString()}
+                    {t('farmer.listedOn', 'Listed on:')} {new Date(item.created_at).toLocaleDateString()}
                   </div>
                 </div>
                 
@@ -173,13 +181,13 @@ const MyProduce: React.FC = () => {
                     onClick={() => handleEditClick(item)}
                     className="flex-1 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-1.5 rounded flex items-center justify-center gap-1 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
                   >
-                    <Edit2 size={16} /> Edit Qty
+                    <Edit2 size={16} /> {t('farmer.editQty', 'Edit Qty')}
                   </button>
                   <button 
                     onClick={() => setDeleteItem(item)}
                     className="flex-1 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/30 text-red-600 dark:text-red-400 py-1.5 rounded flex items-center justify-center gap-1 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
                   >
-                    <Trash2 size={16} /> Remove
+                    <Trash2 size={16} /> {t('common.remove', 'Remove')}
                   </button>
                 </div>
               </div>
@@ -192,16 +200,20 @@ const MyProduce: React.FC = () => {
       <Modal
         isOpen={!!editItem}
         onClose={() => setEditItem(null)}
-        title={`Update Quantity - ${editItem?.vegetable_name}`}
+        title={`${language === 'te' ? 'పరిమాణాన్ని మార్చండి' : 'Update Quantity'} - ${translateVeg(editItem?.vegetable_name)}`}
       >
         <div className="space-y-4">
           <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg text-sm text-blue-800 dark:text-blue-300">
-            <strong>Note:</strong> Price is fixed by admin at <PriceDisplay amount={editItem?.price || editItem?.current_price} />/{editItem?.unit}. You can only update the available quantity.
+            {language === 'te' ? (
+              <><strong>గమనిక:</strong> ప్రభుత్వ/అడ్మిన్ నిర్ణయించిన మార్కెట్ ధర ₹{editItem?.price || editItem?.current_price}/{t(`unit.${editItem?.unit}`, editItem?.unit)}. మీరు అందుబాటులో ఉన్న పరిమాణాన్ని మాత్రమే మార్చగలరు.</>
+            ) : (
+              <><strong>Note:</strong> Price is fixed by admin at <PriceDisplay amount={editItem?.price || editItem?.current_price} />/{editItem?.unit}. You can only update the available quantity.</>
+            )}
           </div>
           
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              New Available Quantity ({editItem?.unit})
+              {t('farmer.quantity', 'New Available Quantity')} ({t(`unit.${editItem?.unit}`, editItem?.unit)})
             </label>
             <input
               type="number"
@@ -217,14 +229,14 @@ const MyProduce: React.FC = () => {
               onClick={() => setEditItem(null)}
               className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
-              Cancel
+              {t('common.cancel', 'Cancel')}
             </button>
             <button
               onClick={handleUpdateQuantity}
               disabled={actionLoading}
               className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
             >
-              {actionLoading ? <LoadingSpinner size="sm" color="white" /> : 'Save Changes'}
+              {actionLoading ? <LoadingSpinner size="sm" color="white" /> : t('common.saveChanges', 'Save Changes')}
             </button>
           </div>
         </div>
@@ -235,10 +247,12 @@ const MyProduce: React.FC = () => {
         isOpen={!!deleteItem}
         onClose={() => setDeleteItem(null)}
         onConfirm={handleDelete}
-        title="Remove Produce Listing"
-        message={`Are you sure you want to remove ${deleteItem?.vegetable_name} from your listings? This action cannot be undone.`}
-        confirmText="Remove"
-        cancelText="Cancel"
+        title={t('farmer.deleteProduce', 'Remove Produce Listing')}
+        message={language === 'te' 
+          ? `మీరు మీ జాబితా నుండి ${translateVeg(deleteItem?.vegetable_name)}ని ఖచ్చితంగా తొలగించాలనుకుంటున్నారా? ఈ చర్యను రద్దు చేయలేరు.`
+          : `Are you sure you want to remove ${deleteItem?.vegetable_name} from your listings? This action cannot be undone.`}
+        confirmText={t('common.remove', 'Remove')}
+        cancelText={t('common.cancel', 'Cancel')}
         type="danger"
         isLoading={actionLoading}
       />

@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, MapPin, Package, ShoppingCart, CheckCircle, Filter } from 'lucide-react';
 import api, { getImageUrl } from '../../api/client';
 import { useCart } from '../../context/CartContext';
 import { useToast } from '../../context/ToastContext';
+import { useLanguage } from '../../context/LanguageContext';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import EmptyState from '../../components/common/EmptyState';
 import QuantitySelector from '../../components/common/QuantitySelector';
@@ -37,6 +38,7 @@ export default function Marketplace() {
   
   const { addToCart } = useCart();
   const { showToast } = useToast();
+  const { t, translateVeg, language } = useLanguage();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -57,7 +59,6 @@ export default function Marketplace() {
   useEffect(() => {
     fetchProducts();
 
-    // Auto-sync in background every 10s so additions on other devices appear live
     const interval = setInterval(() => {
       fetchProducts(true);
     }, 10000);
@@ -88,7 +89,6 @@ export default function Marketplace() {
       const response = await api.get(`/products?${params.toString()}`);
       setProducts(response.data || []);
       
-      // Initialize quantities for any newly added products
       setQuantities(prev => {
         const next = { ...prev };
         (response.data || []).forEach((p: Product) => {
@@ -99,7 +99,7 @@ export default function Marketplace() {
     } catch (error) {
       if (!silent) {
         console.error('Failed to fetch products:', error);
-        showToast('error', 'Failed to load marketplace data');
+        showToast('error', language === 'te' ? 'కూరగాయల జాబితా లోడ్ కాలేదు' : 'Failed to load marketplace data');
       }
     } finally {
       if (!silent) setLoading(false);
@@ -114,9 +114,11 @@ export default function Marketplace() {
     try {
       const quantity = quantities[product.id] || 1;
       await addToCart(product.id, quantity);
-      showToast('success', `${quantity} ${product.unit} of ${product.vegetable_name} added to cart`);
+      const vegName = translateVeg(product.vegetable_name);
+      const unitLabel = t(`unit.${product.unit}`, product.unit);
+      showToast('success', language === 'te' ? `${vegName} (${quantity} ${unitLabel}) కార్ట్‌కు చేర్చబడింది` : `${quantity} ${product.unit} of ${product.vegetable_name} added to cart`);
     } catch (error) {
-      showToast('error', 'Failed to add item to cart');
+      showToast('error', language === 'te' ? 'కార్ట్‌కు జోడించడం విఫలమైంది' : 'Failed to add item to cart');
     }
   };
 
@@ -126,20 +128,20 @@ export default function Marketplace() {
       <div className="bg-gradient-to-r from-green-600 to-green-800 text-white py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto text-center">
           <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-4 drop-shadow-md">
-            Fresh Vegetables, Direct from Farmers
+            {language === 'te' ? 'రైతుల నుండి నేరుగా తాజా కూరగాయలు' : 'Fresh Vegetables, Direct from Farmers'}
           </h1>
           <p className="text-xl text-green-100 max-w-2xl mx-auto mb-8 font-medium">
-            Get farm fresh vegetables at fair & transparent prices.
+            {language === 'te' ? 'ప్రభుత్వ గిట్టుబాటు ధరలతో నాణ్యమైన తాజా కూరగాయలను పొందండి.' : 'Get farm fresh vegetables at fair & transparent prices.'}
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4 text-sm md:text-base font-semibold">
             <span className="bg-white/20 px-4 py-2 rounded-full backdrop-blur-sm shadow-sm flex items-center justify-center gap-2">
-              <CheckCircle className="w-5 h-5 text-green-300" /> Direct from Verified Farmers
+              <CheckCircle className="w-5 h-5 text-green-300" /> {language === 'te' ? 'ధృవీకరించబడిన రైతుల నుండి' : 'Direct from Verified Farmers'}
             </span>
             <span className="bg-white/20 px-4 py-2 rounded-full backdrop-blur-sm shadow-sm flex items-center justify-center gap-2">
-              <CheckCircle className="w-5 h-5 text-green-300" /> Fair & Transparent Prices
+              <CheckCircle className="w-5 h-5 text-green-300" /> {language === 'te' ? 'గిట్టుబాటు & పారదర్శక ధరలు' : 'Fair & Transparent Prices'}
             </span>
             <span className="bg-white/20 px-4 py-2 rounded-full backdrop-blur-sm shadow-sm flex items-center justify-center gap-2">
-              <CheckCircle className="w-5 h-5 text-green-300" /> Freshly Harvested & Delivered
+              <CheckCircle className="w-5 h-5 text-green-300" /> {language === 'te' ? 'తాజాగా కోసిన పంటల డెలివరీ' : 'Freshly Harvested & Delivered'}
             </span>
           </div>
         </div>
@@ -155,7 +157,7 @@ export default function Marketplace() {
             <input
               type="text"
               className="block w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-200 rounded-xl text-lg focus:ring-green-500 focus:border-green-500 transition-colors shadow-inner"
-              placeholder="Search for fresh vegetables..."
+              placeholder={t('market.searchPlaceholder', 'Search for fresh vegetables...')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -170,13 +172,13 @@ export default function Marketplace() {
                 value={selectedVeg}
                 onChange={(e) => setSelectedVeg(e.target.value)}
               >
-                <option value="All">All Vegetables</option>
+                <option value="All">{t('market.allVegetables', 'All Vegetables')}</option>
                 {(vegetableOptions.length > 0 ? vegetableOptions : [
                   'Tomatoes', 'Ladies Finger', 'Cucumbers', 'Spinach', 'Bottle Gourd', 
                   'Carrots', 'Brinjal', 'Potatoes', 'Onions', 'Ridge Gourd', 
                   'Bitter Gourd', 'Tindora', 'Cauliflower', 'Beans', 'Drumstick'
                 ]).map(name => (
-                  <option key={name} value={name}>{name}</option>
+                  <option key={name} value={name}>{translateVeg(name)}</option>
                 ))}
               </select>
             </div>
@@ -185,7 +187,7 @@ export default function Marketplace() {
               <MapPin className="w-5 h-5 text-gray-500 ml-2" />
               <input
                 type="text"
-                placeholder="Location..."
+                placeholder={language === 'te' ? 'ప్రాంతం...' : 'Location...'}
                 className="w-full bg-transparent border-none focus:ring-0 text-sm font-medium text-gray-700"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
@@ -197,10 +199,10 @@ export default function Marketplace() {
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
             >
-              <option value="Recommended">Sort: Recommended</option>
-              <option value="Price Low to High">Price: Low to High</option>
-              <option value="Price High to Low">Price: High to Low</option>
-              <option value="Newest">Newest</option>
+              <option value="Recommended">{t('market.recommended', 'Sort: Recommended')}</option>
+              <option value="Price Low to High">{t('market.priceLowHigh', 'Price: Low to High')}</option>
+              <option value="Price High to Low">{t('market.priceHighLow', 'Price: High to Low')}</option>
+              <option value="Newest">{language === 'te' ? 'సరికొత్తవి' : 'Newest'}</option>
             </select>
 
             <label className="flex items-center gap-3 cursor-pointer p-2 hover:bg-gray-50 rounded-lg transition-colors">
@@ -214,7 +216,9 @@ export default function Marketplace() {
                 <div className={`block w-14 h-8 rounded-full transition-colors ${verifiedOnly ? 'bg-green-500' : 'bg-gray-300'}`}></div>
                 <div className={`dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${verifiedOnly ? 'transform translate-x-6' : ''}`}></div>
               </div>
-              <span className="text-sm font-semibold text-gray-700 select-none">Verified Only</span>
+              <span className="text-sm font-semibold text-gray-700 select-none">
+                {t('market.verifiedOnly', 'Verified Only')}
+              </span>
             </label>
           </div>
         </div>
@@ -227,8 +231,8 @@ export default function Marketplace() {
         ) : products.length === 0 ? (
           <EmptyState
             icon={Package}
-            title="No produce found"
-            message="No fresh produce is currently available matching your criteria. Please check again soon."
+            title={language === 'te' ? 'కూరగాయలు అందుబాటులో లేవు' : 'No produce found'}
+            message={language === 'te' ? 'మీ శోధనకు తగిన తాజా కూరగాయలు ప్రస్తుతానికి అందుబాటులో లేవు. దయచేసి కాసేపటి తర్వాత ప్రయత్నించండి.' : 'No fresh produce is currently available matching your criteria. Please check again soon.'}
           />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -243,7 +247,7 @@ export default function Marketplace() {
                   {product.images && product.images.length > 0 ? (
                     <img
                       src={getImageUrl(product.images[0].image_url)}
-                      alt={product.vegetable_name}
+                      alt={translateVeg(product.vegetable_name)}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                   ) : (
@@ -253,7 +257,7 @@ export default function Marketplace() {
                   )}
                   {product.is_verified === 1 && (
                     <div className="absolute top-3 right-3 bg-white/90 backdrop-blur text-green-600 text-xs font-bold px-3 py-1.5 rounded-full shadow-sm flex items-center gap-1 border border-green-100">
-                      <CheckCircle className="w-3.5 h-3.5" /> Verified
+                      <CheckCircle className="w-3.5 h-3.5" /> {language === 'te' ? 'ధృవీకరించబడింది' : 'Verified'}
                     </div>
                   )}
                 </div>
@@ -261,7 +265,7 @@ export default function Marketplace() {
                 {/* Content Area */}
                 <div className="p-5 flex flex-col flex-grow" onClick={(e) => e.stopPropagation()}>
                   <h3 className="text-xl font-bold text-gray-900 mb-2 truncate">
-                    {product.vegetable_name}
+                    {translateVeg(product.vegetable_name)}
                   </h3>
                   
                   <div className="flex items-center text-gray-500 text-sm mb-2">
@@ -271,13 +275,15 @@ export default function Marketplace() {
                   
                   <div className="flex items-center text-amber-600 text-sm font-medium mb-4 bg-amber-50 self-start px-2.5 py-1 rounded-md">
                     <Package className="w-4 h-4 mr-1.5" />
-                    {product.available_quantity} {product.unit} available
+                    {product.available_quantity} {t(`unit.${product.unit}`, product.unit)} {language === 'te' ? 'అందుబాటులో ఉంది' : 'available'}
                   </div>
 
                   <div className="mt-auto pt-4 border-t border-gray-100">
                     <div className="flex items-end justify-between mb-4">
                       <div>
-                        <p className="text-xs text-gray-500 mb-1 uppercase font-semibold tracking-wider">Price</p>
+                        <p className="text-xs text-gray-500 mb-1 uppercase font-semibold tracking-wider">
+                          {language === 'te' ? 'ధర' : 'Price'}
+                        </p>
                         <PriceDisplay amount={product.current_price} unit={product.unit} className="text-2xl" />
                       </div>
                     </div>
@@ -291,17 +297,17 @@ export default function Marketplace() {
                         className="w-32"
                       />
                       <span className="text-sm font-medium text-gray-500">
-                        Total: <span className="text-gray-900 font-bold">₹{(product.current_price * (quantities[product.id] || 1)).toFixed(2)}</span>
+                        {language === 'te' ? 'మొత్తం:' : 'Total:'} <span className="text-gray-900 font-bold">₹{(product.current_price * (quantities[product.id] || 1)).toFixed(2)}</span>
                       </span>
                     </div>
 
                     <button
                       onClick={() => handleAddToCart(product)}
                       disabled={product.available_quantity === 0}
-                      className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
+                      className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed shadow-sm hover:shadow-md cursor-pointer"
                     >
                       <ShoppingCart className="w-5 h-5" />
-                      {product.available_quantity === 0 ? 'Out of Stock' : 'Add to Cart'}
+                      {product.available_quantity === 0 ? (language === 'te' ? 'స్టాక్ అయిపోయింది' : 'Out of Stock') : t('market.addToCart', 'Add to Cart')}
                     </button>
                   </div>
                 </div>

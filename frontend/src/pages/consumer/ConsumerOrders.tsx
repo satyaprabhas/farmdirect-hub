@@ -6,6 +6,7 @@ import StatusBadge from '../../components/common/StatusBadge';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import EmptyState from '../../components/common/EmptyState';
 import { useToast } from '../../context/ToastContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface OrderItem {
   vegetable_name: string;
@@ -30,6 +31,7 @@ export default function ConsumerOrders() {
   
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { t, translateVeg, language } = useLanguage();
 
   useEffect(() => {
     fetchOrders();
@@ -42,13 +44,20 @@ export default function ConsumerOrders() {
       setOrders(res.data || []);
     } catch (err) {
       console.error(err);
-      showToast('error', 'Failed to fetch orders');
+      showToast('error', language === 'te' ? 'ఆర్డర్లను పొందడంలో విఫలమైంది' : 'Failed to fetch orders');
     } finally {
       setLoading(false);
     }
   };
 
   const tabs = ['All', 'Active', 'Completed', 'Cancelled'];
+
+  const tabLabels: Record<string, string> = {
+    All: t('orders.all', 'All'),
+    Active: t('orders.active', 'Active'),
+    Completed: t('orders.completed', 'Completed'),
+    Cancelled: t('orders.cancelled', 'Cancelled')
+  };
 
   const filteredOrders = orders.filter(order => {
     if (activeTab === 'All') return true;
@@ -61,7 +70,9 @@ export default function ConsumerOrders() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-        <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">My Orders</h1>
+        <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">
+          {t('orders.myOrders', 'My Orders')}
+        </h1>
       </div>
 
       {/* Tabs */}
@@ -76,7 +87,7 @@ export default function ConsumerOrders() {
                 : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
             }`}
           >
-            {tab}
+            {tabLabels[tab]}
           </button>
         ))}
       </div>
@@ -89,9 +100,9 @@ export default function ConsumerOrders() {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 py-16">
           <EmptyState
             icon={ShoppingBag}
-            title="No orders found"
-            message={activeTab === 'All' ? "You haven't placed any orders yet." : `You have no ${activeTab.toLowerCase()} orders.`}
-            actionLabel={activeTab === 'All' ? "Start Shopping" : undefined}
+            title={t('orders.noOrders', 'No orders found')}
+            message={activeTab === 'All' ? t('orders.noOrdersDesc', "You haven't placed any orders yet.") : (language === 'te' ? `మీకు ఎటువంటి ${tabLabels[activeTab]} ఆర్డర్లు లేవు.` : `You have no ${activeTab.toLowerCase()} orders.`)}
+            actionLabel={activeTab === 'All' ? t('cart.startShopping', 'Start Shopping') : undefined}
             onAction={activeTab === 'All' ? () => navigate('/consumer') : undefined}
           />
         </div>
@@ -107,13 +118,15 @@ export default function ConsumerOrders() {
                   </div>
                   <div className="flex items-center text-sm text-gray-500 font-medium">
                     <Calendar className="w-4 h-4 mr-1.5" />
-                    {new Date(order.created_at).toLocaleDateString('en-US', {
+                    {new Date(order.created_at).toLocaleDateString(language === 'te' ? 'te-IN' : 'en-US', {
                       year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
                     })}
                   </div>
                 </div>
                 <div className="text-left sm:text-right">
-                  <p className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">Total Amount</p>
+                  <p className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">
+                    {t('orders.totalAmount', 'Total Amount')}
+                  </p>
                   <p className="text-xl font-extrabold text-green-600">₹{order.total_amount.toFixed(2)}</p>
                 </div>
               </div>
@@ -127,15 +140,15 @@ export default function ConsumerOrders() {
                           {(item.vegetable_name || '?').charAt(0)}
                         </div>
                         <div>
-                          <p className="font-bold text-gray-900">{item.vegetable_name || 'Unknown'}</p>
-                          <p className="text-gray-500">Qty: {item.quantity} {item.unit}</p>
+                          <p className="font-bold text-gray-900">{translateVeg(item.vegetable_name) || 'Unknown'}</p>
+                          <p className="text-gray-500">{t('cart.quantity', 'Qty')}: {item.quantity} {t(`unit.${item.unit}`, item.unit)}</p>
                         </div>
                       </div>
                       <p className="font-semibold text-gray-900">₹{(item.price_at_purchase * item.quantity).toFixed(2)}</p>
                     </div>
                   ))}
                   {order.items && order.items.length > 3 && (
-                    <p className="text-sm text-gray-500 italic mt-2">+ {order.items.length - 3} more items</p>
+                    <p className="text-sm text-gray-500 italic mt-2">+ {order.items.length - 3} {t('orders.moreItems', 'more items')}</p>
                   )}
                 </div>
 
@@ -144,7 +157,7 @@ export default function ConsumerOrders() {
                     onClick={() => navigate(`/consumer/orders/${order.id}`)}
                     className="bg-white border-2 border-green-600 text-green-700 hover:bg-green-50 font-bold py-2.5 px-6 rounded-xl flex items-center gap-2 transition-colors"
                   >
-                    View Details & Track <ChevronRight className="w-4 h-4" />
+                    {t('orders.viewDetails', 'View Details & Track')} <ChevronRight className="w-4 h-4" />
                   </button>
                 </div>
               </div>

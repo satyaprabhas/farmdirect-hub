@@ -4,6 +4,7 @@ import { Check, ChevronRight, Sprout, MapPin, Camera, ClipboardCheck, ArrowLeft 
 import api from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { useLanguage } from '../../context/LanguageContext';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import QuantitySelector from '../../components/common/QuantitySelector';
 import ImageUploader from '../../components/common/ImageUploader';
@@ -13,6 +14,7 @@ const AddProduce: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { t, translateVeg, language } = useLanguage();
   
   const [currentStep, setCurrentStep] = useState(1);
   const [vegetables, setVegetables] = useState<any[]>([]);
@@ -143,20 +145,24 @@ const AddProduce: React.FC = () => {
   };
 
   const steps = [
-    { num: 1, title: 'Select Item', icon: Sprout },
-    { num: 2, title: 'Add Details', icon: MapPin },
-    { num: 3, title: 'Upload Photos', icon: Camera },
-    { num: 4, title: 'Review', icon: ClipboardCheck },
+    { num: 1, title: language === 'te' ? 'పంట ఎంపిక' : 'Select Item', icon: Sprout },
+    { num: 2, title: language === 'te' ? 'వివరాలు' : 'Add Details', icon: MapPin },
+    { num: 3, title: language === 'te' ? 'ఫోటోలు' : 'Upload Photos', icon: Camera },
+    { num: 4, title: language === 'te' ? 'సమీక్ష' : 'Review', icon: ClipboardCheck },
   ];
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-fade-in pb-12">
       <div>
         <button onClick={() => navigate('/farmer')} className="flex items-center text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 mb-4 transition-colors">
-          <ArrowLeft size={16} className="mr-1" /> Back to Dashboard
+          <ArrowLeft size={16} className="mr-1" /> {language === 'te' ? 'డ్యాష్‌బోర్డ్‌కు వెళ్లండి' : 'Back to Dashboard'}
         </button>
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Add New Produce</h1>
-        <p className="text-gray-600 dark:text-gray-300">List your harvest for sale to consumers</p>
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
+          {language === 'te' ? 'కొత్త పంటను చేర్చండి' : 'Add New Produce'}
+        </h1>
+        <p className="text-gray-600 dark:text-gray-300">
+          {language === 'te' ? 'మీ పంటను వినియోగదారులకు విక్రయించడానికి వివరాలను నమోదు చేయండి' : 'List your harvest for sale to consumers'}
+        </p>
       </div>
 
       {/* Progress Bar */}
@@ -200,8 +206,12 @@ const AddProduce: React.FC = () => {
         {currentStep === 1 && (
           <div className="space-y-6 animate-fade-in">
             <div className="text-center mb-8">
-              <h2 className="text-xl font-semibold text-gray-800 dark:text-white">Select Harvested Crop</h2>
-              <p className="text-gray-500 dark:text-gray-400 mt-1">Choose the vegetable you've harvested</p>
+              <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
+                {language === 'te' ? 'పంటను ఎంచుకోండి' : 'Select Harvested Crop'}
+              </h2>
+              <p className="text-gray-500 dark:text-gray-400 mt-1">
+                {language === 'te' ? 'మీరు విక్రయించాలనుకుంటున్న కూరగాయను ఎంచుకోండి' : "Choose the vegetable you've harvested"}
+              </p>
             </div>
             
             {loading ? (
@@ -222,8 +232,12 @@ const AddProduce: React.FC = () => {
                       {veg.name.charAt(0)}
                     </div>
                     <div>
-                      <h3 className="font-medium text-gray-900 dark:text-white leading-tight">{veg.name}</h3>
-                      <p className="text-xs text-gray-500 mt-1">Your Price: ₹{Math.round((veg.current_price || veg.admin_price) * 0.85)}/{veg.unit}</p>
+                      <h3 className="font-medium text-gray-900 dark:text-white leading-tight">
+                        {translateVeg(veg.name)}
+                      </h3>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {language === 'te' ? 'మీ ధర:' : 'Your Price:'} ₹{Math.round((veg.current_price || veg.admin_price) * 0.85)}/{t(`unit.${veg.unit}`, veg.unit)}
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -240,7 +254,7 @@ const AddProduce: React.FC = () => {
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-400 cursor-not-allowed'
                 }`}
               >
-                Next <ChevronRight size={18} />
+                {t('common.next', 'Next')} <ChevronRight size={18} />
               </button>
             </div>
           </div>
@@ -250,26 +264,36 @@ const AddProduce: React.FC = () => {
         {currentStep === 2 && (
           <div className="space-y-6 animate-fade-in">
             <div className="text-center mb-8">
-              <h2 className="text-xl font-semibold text-gray-800 dark:text-white">Harvest Details</h2>
-              <p className="text-gray-500 dark:text-gray-400 mt-1">Tell us about your {selectedVeg?.name} harvest</p>
+              <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
+                {language === 'te' ? 'పంట వివరాలు' : 'Harvest Details'}
+              </h2>
+              <p className="text-gray-500 dark:text-gray-400 mt-1">
+                {language === 'te' 
+                  ? `మీ ${translateVeg(selectedVeg?.name || '')} పంట వివరాలను అందించండి`
+                  : `Tell us about your ${selectedVeg?.name} harvest`}
+              </p>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-6">
-                <h3 className="text-lg font-medium text-gray-800 dark:text-white border-b pb-2">Quantity & Pricing</h3>
+                <h3 className="text-lg font-medium text-gray-800 dark:text-white border-b pb-2">
+                  {language === 'te' ? 'పరిమాణం & ధర' : 'Quantity & Pricing'}
+                </h3>
                 
                 <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-gray-600 dark:text-gray-400">Your Earning Price</span>
+                    <span className="text-gray-600 dark:text-gray-400">{t('farmer.yourPrice', 'Your Earning Price')}</span>
                     <span className="font-semibold text-gray-800 dark:text-white">
-                      ₹{Math.round((selectedVeg?.current_price || selectedVeg?.admin_price || 0) * 0.85)}/{selectedVeg?.unit}
+                      ₹{Math.round((selectedVeg?.current_price || selectedVeg?.admin_price || 0) * 0.85)}/{t(`unit.${selectedVeg?.unit}`, selectedVeg?.unit)}
                     </span>
                   </div>
-                  <p className="text-xs text-gray-500">Includes 15% platform/admin margin.</p>
+                  <p className="text-xs text-gray-500">{t('farmer.marginNote', 'Includes 15% platform/admin margin.')}</p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Available Quantity</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {t('farmer.quantity', 'Available Quantity')}
+                  </label>
                   <div className="flex gap-2">
                     <div className="flex-1">
                       <QuantitySelector 
@@ -285,17 +309,17 @@ const AddProduce: React.FC = () => {
                       onChange={(e) => setUnit(e.target.value)}
                       className="w-1/3 rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500"
                     >
-                      <option value="kg">kg</option>
-                      <option value="quintal">Quintal</option>
-                      <option value="bunch">Bunch</option>
-                      <option value="piece">Piece</option>
+                      <option value="kg">{t('unit.kg', 'kg')}</option>
+                      <option value="quintal">{t('unit.quintal', 'Quintal')}</option>
+                      <option value="bunch">{t('unit.bunch', 'Bunch')}</option>
+                      <option value="piece">{t('unit.piece', 'Piece')}</option>
                     </select>
                   </div>
                 </div>
 
                 <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-xl border border-green-100 dark:border-green-900/30">
                   <div className="flex justify-between items-center">
-                    <span className="text-green-800 dark:text-green-300 font-medium">Estimated Total Value</span>
+                    <span className="text-green-800 dark:text-green-300 font-medium">{t('farmer.estValue', 'Estimated Total Value')}</span>
                     <span className="text-xl font-bold text-green-700 dark:text-green-400">
                       <PriceDisplay amount={quantity * (selectedVeg?.admin_price || 0)} />
                     </span>
@@ -304,10 +328,14 @@ const AddProduce: React.FC = () => {
               </div>
 
               <div className="space-y-4">
-                <h3 className="text-lg font-medium text-gray-800 dark:text-white border-b pb-2">Farm Location</h3>
+                <h3 className="text-lg font-medium text-gray-800 dark:text-white border-b pb-2">
+                  {language === 'te' ? 'పొలం చిరునామా' : 'Farm Location'}
+                </h3>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Farm/Place Name</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {t('farmer.farmPlaceName', 'Farm/Place Name')}
+                  </label>
                   <input 
                     type="text" 
                     value={farmName}
@@ -318,7 +346,9 @@ const AddProduce: React.FC = () => {
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Village/City</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      {t('farmer.village', 'Village/City')}
+                    </label>
                     <input 
                       type="text" 
                       value={village}
@@ -327,7 +357,9 @@ const AddProduce: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">District</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      {t('farmer.district', 'District')}
+                    </label>
                     <input 
                       type="text" 
                       value={district}
@@ -339,7 +371,9 @@ const AddProduce: React.FC = () => {
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">State</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      {t('farmer.state', 'State')}
+                    </label>
                     <input 
                       type="text" 
                       value={state}
@@ -348,7 +382,9 @@ const AddProduce: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Pincode</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      {t('farmer.pincode', 'Pincode')}
+                    </label>
                     <input 
                       type="text" 
                       value={pincode}
@@ -365,7 +401,7 @@ const AddProduce: React.FC = () => {
                 onClick={handleBack}
                 className="px-6 py-2.5 rounded-lg font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               >
-                Back
+                {t('common.back', 'Back')}
               </button>
               <button
                 onClick={handleNext}
@@ -376,7 +412,7 @@ const AddProduce: React.FC = () => {
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-400 cursor-not-allowed'
                 }`}
               >
-                Next <ChevronRight size={18} />
+                {t('common.next', 'Next')} <ChevronRight size={18} />
               </button>
             </div>
           </div>
@@ -386,8 +422,14 @@ const AddProduce: React.FC = () => {
         {currentStep === 3 && (
           <div className="space-y-6 animate-fade-in">
             <div className="text-center mb-8">
-              <h2 className="text-xl font-semibold text-gray-800 dark:text-white">Upload Photos</h2>
-              <p className="text-gray-500 dark:text-gray-400 mt-1">Add clear photos of your {selectedVeg?.name} to attract buyers</p>
+              <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
+                {t('farmer.uploadPhotosTitle', 'Upload Photos')}
+              </h2>
+              <p className="text-gray-500 dark:text-gray-400 mt-1">
+                {language === 'te' 
+                  ? `కొనుగోలుదారులను ఆకర్షించడానికి మీ ${translateVeg(selectedVeg?.name || '')} పంట స్పష్టమైన ఫోటోలను చేర్చండి`
+                  : `Add clear photos of your ${selectedVeg?.name} to attract buyers`}
+              </p>
             </div>
             
             <div className="max-w-2xl mx-auto">
@@ -395,7 +437,7 @@ const AddProduce: React.FC = () => {
                 images={images} 
                 onChange={setImages} 
                 maxImages={5}
-                label="Upload up to 5 photos (Optional but recommended)"
+                label={t('farmer.uploadPhotosLimit', 'Upload up to 5 photos (Optional but recommended)')}
               />
             </div>
             
@@ -404,13 +446,13 @@ const AddProduce: React.FC = () => {
                 onClick={handleBack}
                 className="px-6 py-2.5 rounded-lg font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               >
-                Back
+                {t('common.back', 'Back')}
               </button>
               <button
                 onClick={handleNext}
                 className="bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-lg font-medium flex items-center gap-2 transition-colors shadow-sm"
               >
-                Next <ChevronRight size={18} />
+                {t('common.next', 'Next')} <ChevronRight size={18} />
               </button>
             </div>
           </div>
@@ -420,8 +462,12 @@ const AddProduce: React.FC = () => {
         {currentStep === 4 && (
           <div className="space-y-6 animate-fade-in">
             <div className="text-center mb-8">
-              <h2 className="text-xl font-semibold text-gray-800 dark:text-white">Review & Submit</h2>
-              <p className="text-gray-500 dark:text-gray-400 mt-1">Please verify all details before submitting</p>
+              <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
+                {t('farmer.reviewTitle', 'Review & Submit')}
+              </h2>
+              <p className="text-gray-500 dark:text-gray-400 mt-1">
+                {t('farmer.reviewDesc', 'Please verify all details before submitting')}
+              </p>
             </div>
             
             <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-6 border border-gray-100 dark:border-gray-800">
@@ -445,7 +491,7 @@ const AddProduce: React.FC = () => {
                   ) : (
                     <div className="aspect-square rounded-lg bg-gray-100 dark:bg-gray-800 border border-dashed border-gray-300 dark:border-gray-600 flex flex-col items-center justify-center text-gray-400">
                       <Camera size={40} className="mb-2 opacity-50" />
-                      <span className="text-sm">No photos added</span>
+                      <span className="text-sm">{t('farmer.noPhotos', 'No photos added')}</span>
                     </div>
                   )}
                 </div>
@@ -453,26 +499,28 @@ const AddProduce: React.FC = () => {
                 {/* Details */}
                 <div className="w-full md:w-2/3 space-y-6">
                   <div>
-                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{selectedVeg?.name}</h3>
+                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{translateVeg(selectedVeg?.name)}</h3>
                     <div className="flex items-center text-green-600 dark:text-green-400 mt-1 font-medium">
-                      ₹{Math.round((selectedVeg?.current_price || selectedVeg?.admin_price || 0) * 0.85)}/{selectedVeg?.unit} (Your Price)
+                      ₹{Math.round((selectedVeg?.current_price || selectedVeg?.admin_price || 0) * 0.85)}/{t(`unit.${selectedVeg?.unit}`, selectedVeg?.unit)} {t('farmer.yourPriceParen', '(Your Price)')}
                     </div>
                   </div>
                   
                   <div className="grid grid-cols-2 gap-y-4 gap-x-8 text-sm">
                     <div>
-                      <span className="text-gray-500 dark:text-gray-400 block mb-1">Available Quantity</span>
-                      <span className="font-semibold text-gray-900 dark:text-white text-lg">{quantity} {unit}</span>
+                      <span className="text-gray-500 dark:text-gray-400 block mb-1">{t('farmer.quantity', 'Available Quantity')}</span>
+                      <span className="font-semibold text-gray-900 dark:text-white text-lg">{quantity} {t(`unit.${unit}`, unit)}</span>
                     </div>
                     <div>
-                      <span className="text-gray-500 dark:text-gray-400 block mb-1">Estimated Value</span>
+                      <span className="text-gray-500 dark:text-gray-400 block mb-1">{t('farmer.estValueLabel', 'Est. Value:')}</span>
                       <span className="font-semibold text-green-600 dark:text-green-400 text-lg">
                         ₹{Math.round(quantity * ((selectedVeg?.current_price || selectedVeg?.admin_price || 0) * 0.85))}
                       </span>
                     </div>
                     
                     <div className="col-span-2 pt-4 border-t border-gray-200 dark:border-gray-700">
-                      <span className="text-gray-500 dark:text-gray-400 block mb-1">Farm Location</span>
+                      <span className="text-gray-500 dark:text-gray-400 block mb-1">
+                        {language === 'te' ? 'పొలం చిరునామా' : 'Farm Location'}
+                      </span>
                       <p className="text-gray-900 dark:text-white">
                         <span className="font-medium">{farmName}</span><br />
                         {village}, {district}<br />
@@ -490,7 +538,7 @@ const AddProduce: React.FC = () => {
                 disabled={submitting}
                 className="px-6 py-2.5 rounded-lg font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
               >
-                Go Back
+                {t('common.back', 'Go Back')}
               </button>
               <button
                 onClick={handleSubmit}
@@ -498,9 +546,9 @@ const AddProduce: React.FC = () => {
                 className="bg-green-600 hover:bg-green-700 text-white px-8 py-2.5 rounded-lg font-bold flex items-center gap-2 transition-colors shadow-md disabled:opacity-70"
               >
                 {submitting ? (
-                  <><LoadingSpinner size="sm" color="white" /> Submitting...</>
+                  <><LoadingSpinner size="sm" color="white" /> {t('common.submitting', 'Submitting...')}</>
                 ) : (
-                  <><Check size={20} /> Submit Produce</>
+                  <><Check size={20} /> {t('farmer.submitProduce', 'Submit Produce')}</>
                 )}
               </button>
             </div>

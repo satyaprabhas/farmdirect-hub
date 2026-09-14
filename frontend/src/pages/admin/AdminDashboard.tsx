@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { useLanguage } from '../../context/LanguageContext';
 import api from '../../api/client';
 import DashboardCard from '../../components/common/DashboardCard';
 import StatusBadge from '../../components/common/StatusBadge';
@@ -26,6 +27,7 @@ interface DashboardData {
 const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
   const { showToast } = useToast();
+  const { t, translateVeg, language } = useLanguage();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -39,7 +41,7 @@ const AdminDashboard: React.FC = () => {
       const response = await api.get('/admin/dashboard');
       setData(response.data);
     } catch (error) {
-      showToast('Failed to load dashboard data', 'error');
+      showToast(language === 'te' ? 'డ్యాష్‌బోర్డ్ డేటాను లోడ్ చేయడంలో విఫలమైంది' : 'Failed to load dashboard data', 'error');
     } finally {
       setLoading(false);
     }
@@ -52,55 +54,55 @@ const AdminDashboard: React.FC = () => {
   return (
     <div className="animate-fade-in space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-        <p className="text-gray-500">Welcome back, {user?.full_name}</p>
+        <h1 className="text-2xl font-bold text-gray-900">{t('admin.dashTitle', 'Admin Dashboard')}</h1>
+        <p className="text-gray-500">{t('farmer.welcomeBack', 'Welcome back')}, {user?.full_name}</p>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <DashboardCard 
-          title="Total Farmers" 
+          title={t('admin.totalFarmers', 'Total Farmers')} 
           value={(data.totalFarmers || 0).toString()} 
           icon={<Users className="w-6 h-6 text-green-600" />} 
           className="bg-green-50"
         />
         <DashboardCard 
-          title="Total Consumers" 
+          title={t('admin.totalConsumers', 'Total Consumers')} 
           value={(data.totalConsumers || 0).toString()} 
           icon={<ShoppingCart className="w-6 h-6 text-blue-600" />} 
           className="bg-blue-50"
         />
         <DashboardCard 
-          title="Total Coordinators" 
+          title={t('admin.totalCoordinators', 'Total Coordinators')} 
           value={(data.totalCoordinators || 0).toString()} 
           icon={<Truck className="w-6 h-6 text-purple-600" />} 
           className="bg-purple-50"
         />
         <DashboardCard 
-          title="Total Products" 
+          title={t('admin.totalProducts', 'Total Products')} 
           value={(data.totalProducts || 0).toString()} 
           icon={<Package className="w-6 h-6 text-orange-600" />} 
           className="bg-orange-50"
         />
         <DashboardCard 
-          title="Total Orders" 
+          title={t('admin.totalOrders', 'Total Orders')} 
           value={(data.totalOrders || 0).toString()} 
           icon={<ClipboardList className="w-6 h-6 text-cyan-600" />} 
           className="bg-cyan-50"
         />
         <DashboardCard 
-          title="Pending Orders" 
+          title={t('admin.pendingOrders', 'Pending Orders')} 
           value={(data.pendingOrders || 0).toString()} 
           icon={<Clock className="w-6 h-6 text-yellow-600" />} 
           className="bg-yellow-50"
         />
         <DashboardCard 
-          title="Completed Orders" 
+          title={t('admin.completedOrders', 'Completed Orders')} 
           value={(data.completedOrders || 0).toString()} 
           icon={<CheckCircle className="w-6 h-6 text-green-600" />} 
           className="bg-green-50"
         />
         <DashboardCard 
-          title="Total Sales" 
+          title={t('admin.totalSales', 'Total Sales')} 
           value={`₹${(data.totalSales || 0).toFixed(2)}`} 
           icon={<IndianRupee className="w-6 h-6 text-emerald-600" />} 
           className="bg-emerald-50"
@@ -109,18 +111,18 @@ const AdminDashboard: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Orders</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('admin.recentOrders', 'Recent Orders')}</h2>
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left text-gray-600">
               <thead className="text-xs text-gray-700 uppercase bg-gray-50 rounded-lg">
                 <tr>
-                  <th className="px-4 py-3">Order #</th>
-                  <th className="px-4 py-3">Consumer</th>
-                  <th className="px-4 py-3">Product</th>
-                  <th className="px-4 py-3">Qty</th>
-                  <th className="px-4 py-3">Total</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Date</th>
+                  <th className="px-4 py-3">{t('coord.orderNum', 'Order #')}</th>
+                  <th className="px-4 py-3">{t('coord.consumer', 'Consumer')}</th>
+                  <th className="px-4 py-3">{t('coord.items', 'Product')}</th>
+                  <th className="px-4 py-3">{t('cart.quantity', 'Qty')}</th>
+                  <th className="px-4 py-3">{t('coord.amount', 'Total')}</th>
+                  <th className="px-4 py-3">{t('coord.status', 'Status')}</th>
+                  <th className="px-4 py-3">{t('coord.date', 'Date')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -129,14 +131,14 @@ const AdminDashboard: React.FC = () => {
                     <td className="px-4 py-3 font-medium text-gray-900">{order.order_number}</td>
                     <td className="px-4 py-3">{order.consumer_name || 'N/A'}</td>
                     <td className="px-4 py-3">
-                      {order.items?.map((item: any) => item.vegetable_name).join(', ')}
+                      {order.items?.map((item: any) => translateVeg(item.vegetable_name)).join(', ')}
                     </td>
                     <td className="px-4 py-3">
-                      {order.items?.map((item: any) => `${item.quantity}${item.unit}`).join(', ')}
+                      {order.items?.map((item: any) => `${item.quantity}${t('unit.' + item.unit, item.unit)}`).join(', ')}
                     </td>
                     <td className="px-4 py-3">₹{order.total_amount}</td>
                     <td className="px-4 py-3"><StatusBadge status={order.status} /></td>
-                    <td className="px-4 py-3">{new Date(order.placed_at || order.created_at || '').toLocaleDateString()}</td>
+                    <td className="px-4 py-3">{new Date(order.placed_at || order.created_at || '').toLocaleDateString(language === 'te' ? 'te-IN' : 'en-US')}</td>
                   </tr>
                 ))}
               </tbody>
@@ -145,7 +147,7 @@ const AdminDashboard: React.FC = () => {
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Top Selling Vegetables</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('admin.topVegetables', 'Top Selling Vegetables')}</h2>
           <div className="space-y-4">
             {(data.topVegetables || []).map((veg: any, index: number) => (
               <div key={index} className="flex items-center justify-between">
@@ -153,9 +155,9 @@ const AdminDashboard: React.FC = () => {
                   <div className="w-8 h-8 rounded-full bg-green-100 text-green-700 flex items-center justify-center font-bold text-sm">
                     {index + 1}
                   </div>
-                  <span className="font-medium text-gray-800">{veg.name}</span>
+                  <span className="font-medium text-gray-800">{translateVeg(veg.name)}</span>
                 </div>
-                <span className="text-gray-600">{veg.total_sold || 0} sold</span>
+                <span className="text-gray-600">{veg.total_sold || 0} {language === 'te' ? 'అమ్మకాలు' : 'sold'}</span>
               </div>
             ))}
           </div>

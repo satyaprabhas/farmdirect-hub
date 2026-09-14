@@ -24,6 +24,8 @@ import {
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import { ToastProvider } from './context/ToastContext';
+import { LanguageProvider, useLanguage } from './context/LanguageContext';
+import { LanguageToggle } from './components/common/LanguageToggle';
 import LoadingSpinner from './components/common/LoadingSpinner';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
@@ -96,48 +98,48 @@ const ProtectedRoute = ({ allowedRoles }: { allowedRoles: string[] }) => {
   return <Outlet />;
 };
 
-const getRoleMenuItems = (role: string) => {
+const getRoleMenuItems = (role: string, t: (k: string, fb?: string) => string) => {
   switch (role) {
     case 'ADMIN':
       return [
-        { path: '/admin', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
-        { path: '/admin/prices', label: 'Vegetable Prices', icon: <IndianRupee size={20} /> },
-        { path: '/admin/farmers', label: 'Farmers', icon: <Sprout size={20} /> },
-        { path: '/admin/consumers', label: 'Consumers', icon: <Users size={20} /> },
-        { path: '/admin/coordinators', label: 'Coordinators', icon: <Truck size={20} /> },
-        { path: '/admin/products', label: 'Products', icon: <Package size={20} /> },
-        { path: '/admin/orders', label: 'Orders', icon: <ClipboardList size={20} /> },
-        { path: '/admin/reports', label: 'Reports', icon: <BarChart3 size={20} /> },
-        { path: '/admin/notifications', label: 'Notifications', icon: <Bell size={20} /> },
-        { path: '/admin/settings', label: 'Settings', icon: <Settings size={20} /> },
+        { path: '/admin', label: t('menu.dashboard', 'Dashboard'), icon: <LayoutDashboard size={20} /> },
+        { path: '/admin/prices', label: t('menu.vegetablePrices', 'Vegetable Prices'), icon: <IndianRupee size={20} /> },
+        { path: '/admin/farmers', label: t('menu.farmers', 'Farmers'), icon: <Sprout size={20} /> },
+        { path: '/admin/consumers', label: t('menu.consumers', 'Consumers'), icon: <Users size={20} /> },
+        { path: '/admin/coordinators', label: t('menu.coordinators', 'Coordinators'), icon: <Truck size={20} /> },
+        { path: '/admin/products', label: t('menu.products', 'Products'), icon: <Package size={20} /> },
+        { path: '/admin/orders', label: t('menu.orders', 'Orders'), icon: <ClipboardList size={20} /> },
+        { path: '/admin/reports', label: t('menu.reports', 'Reports'), icon: <BarChart3 size={20} /> },
+        { path: '/admin/notifications', label: t('menu.notifications', 'Notifications'), icon: <Bell size={20} /> },
+        { path: '/admin/settings', label: t('menu.settings', 'Settings'), icon: <Settings size={20} /> },
       ];
     case 'FARMER':
       return [
-        { path: '/farmer', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
-        { path: '/farmer/produce', label: 'My Produce', icon: <Package size={20} /> },
-        { path: '/farmer/add-produce', label: 'Add Produce', icon: <PlusCircle size={20} /> },
-        { path: '/farmer/orders', label: 'My Orders', icon: <ClipboardList size={20} /> },
-        { path: '/farmer/earnings', label: 'My Earnings', icon: <IndianRupee size={20} /> },
-        { path: '/farmer/profile', label: 'Profile', icon: <User size={20} /> },
-        { path: '/farmer/notifications', label: 'Notifications', icon: <Bell size={20} /> },
+        { path: '/farmer', label: t('menu.dashboard', 'Dashboard'), icon: <LayoutDashboard size={20} /> },
+        { path: '/farmer/produce', label: t('menu.myProduce', 'My Produce'), icon: <Package size={20} /> },
+        { path: '/farmer/add-produce', label: t('menu.addProduce', 'Add Produce'), icon: <PlusCircle size={20} /> },
+        { path: '/farmer/orders', label: t('menu.myOrders', 'My Orders'), icon: <ClipboardList size={20} /> },
+        { path: '/farmer/earnings', label: t('menu.myEarnings', 'My Earnings'), icon: <IndianRupee size={20} /> },
+        { path: '/farmer/profile', label: t('menu.profile', 'Profile'), icon: <User size={20} /> },
+        { path: '/farmer/notifications', label: t('menu.notifications', 'Notifications'), icon: <Bell size={20} /> },
       ];
     case 'CONSUMER':
       return [
-        { path: '/consumer', label: 'Marketplace', icon: <Store size={20} /> },
-        { path: '/consumer/cart', label: 'My Cart', icon: <ShoppingCart size={20} /> },
-        { path: '/consumer/orders', label: 'My Orders', icon: <ClipboardList size={20} /> },
-        { path: '/consumer/profile', label: 'Profile', icon: <User size={20} /> },
-        { path: '/consumer/notifications', label: 'Notifications', icon: <Bell size={20} /> },
+        { path: '/consumer', label: t('menu.marketplace', 'Marketplace'), icon: <Store size={20} /> },
+        { path: '/consumer/cart', label: t('menu.myCart', 'My Cart'), icon: <ShoppingCart size={20} /> },
+        { path: '/consumer/orders', label: t('menu.myOrders', 'My Orders'), icon: <ClipboardList size={20} /> },
+        { path: '/consumer/profile', label: t('menu.profile', 'Profile'), icon: <User size={20} /> },
+        { path: '/consumer/notifications', label: t('menu.notifications', 'Notifications'), icon: <Bell size={20} /> },
       ];
     case 'COORDINATOR':
       return [
-        { path: '/coordinator', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
-        { path: '/coordinator/orders', label: 'Pre-Booked Orders', icon: <ClipboardList size={20} /> },
-        { path: '/coordinator/completed', label: 'Completed Orders', icon: <CheckCircle size={20} /> },
-        { path: '/coordinator/farmers', label: 'Farmers', icon: <Sprout size={20} /> },
-        { path: '/coordinator/customers', label: 'Customers', icon: <Users size={20} /> },
-        { path: '/coordinator/reports', label: 'Reports', icon: <BarChart3 size={20} /> },
-        { path: '/coordinator/notifications', label: 'Notifications', icon: <Bell size={20} /> },
+        { path: '/coordinator', label: t('menu.dashboard', 'Dashboard'), icon: <LayoutDashboard size={20} /> },
+        { path: '/coordinator/orders', label: t('menu.preBookedOrders', 'Pre-Booked Orders'), icon: <ClipboardList size={20} /> },
+        { path: '/coordinator/completed', label: t('menu.completedOrders', 'Completed Orders'), icon: <CheckCircle size={20} /> },
+        { path: '/coordinator/farmers', label: t('menu.farmers', 'Farmers'), icon: <Sprout size={20} /> },
+        { path: '/coordinator/customers', label: t('menu.customers', 'Customers'), icon: <Users size={20} /> },
+        { path: '/coordinator/reports', label: t('menu.reports', 'Reports'), icon: <BarChart3 size={20} /> },
+        { path: '/coordinator/notifications', label: t('menu.notifications', 'Notifications'), icon: <Bell size={20} /> },
       ];
     default:
       return [];
@@ -146,9 +148,10 @@ const getRoleMenuItems = (role: string) => {
 
 const DashboardLayout = ({ role }: { role: string }) => {
   const { user, logout } = useAuth();
+  const { t } = useLanguage();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
-  const menuItems = getRoleMenuItems(role);
+  const menuItems = getRoleMenuItems(role, t);
 
   const isActive = (path: string) => {
     if (path === `/${role.toLowerCase()}`) {
@@ -172,7 +175,7 @@ const DashboardLayout = ({ role }: { role: string }) => {
         <div className="flex items-center justify-between py-6 px-4 border-b">
           <div className="flex items-center space-x-2">
             <Sprout className="w-8 h-8 text-primary-600" />
-            <span className="text-xl font-bold text-gray-800">FarmDirect Hub</span>
+            <span className="text-xl font-bold text-gray-800">{t('brand.name', 'FarmDirect Hub')}</span>
           </div>
           <button className="md:hidden text-gray-500" onClick={() => setSidebarOpen(false)}>
             <X className="w-6 h-6" />
@@ -207,7 +210,7 @@ const DashboardLayout = ({ role }: { role: string }) => {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-900 truncate">{user?.full_name}</p>
-              <p className="text-xs text-gray-500 truncate">{user?.role}</p>
+              <p className="text-xs text-gray-500 truncate">{t(`role.${user?.role?.toLowerCase()}`, user?.role)}</p>
             </div>
           </div>
           <button 
@@ -215,7 +218,7 @@ const DashboardLayout = ({ role }: { role: string }) => {
             className="flex items-center w-full px-4 py-2 text-sm text-red-600 rounded hover:bg-red-50 transition-colors"
           >
             <LogOut className="w-4 h-4 mr-2" />
-            Logout
+            {t('nav.logout', 'Logout')}
           </button>
         </div>
       </aside>
@@ -232,11 +235,12 @@ const DashboardLayout = ({ role }: { role: string }) => {
               <Menu className="w-6 h-6" />
             </button>
             <h1 className="text-xl font-semibold text-gray-800 capitalize hidden sm:block">
-              {role.toLowerCase()} Portal
+              {t(`role.${role.toLowerCase()}.portal`, `${role.toLowerCase()} Portal`)}
             </h1>
           </div>
           
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3 sm:space-x-4">
+            <LanguageToggle />
             <button className="relative text-gray-500 hover:text-gray-700">
               <Bell className="w-6 h-6" />
               <span className="absolute top-0 right-0 block w-2 h-2 rounded-full bg-red-500 ring-2 ring-white" />
@@ -258,72 +262,74 @@ const DashboardLayout = ({ role }: { role: string }) => {
 export default function App() {
   return (
     <ToastProvider>
-      <AuthProvider>
-        <CartProvider>
-          <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/register" element={<RegisterSelect />} />
-            <Route path="/register/farmer" element={<FarmerRegister />} />
-            <Route path="/register/consumer" element={<ConsumerRegister />} />
-            <Route path="/register/coordinator" element={<CoordinatorRegister />} />
-            
-            <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
-              <Route element={<DashboardLayout role="ADMIN" />}>
-                <Route path="/admin" element={<AdminDashboard />} />
-                <Route path="/admin/prices" element={<PriceManagement />} />
-                <Route path="/admin/farmers" element={<FarmerManagement />} />
-                <Route path="/admin/consumers" element={<ConsumerManagement />} />
-                <Route path="/admin/coordinators" element={<CoordinatorManagement />} />
-                <Route path="/admin/orders" element={<AdminOrders />} />
-                <Route path="/admin/products" element={<AdminProducts />} />
-                <Route path="/admin/reports" element={<AdminReports />} />
-                <Route path="/admin/notifications" element={<AdminNotifications />} />
-                <Route path="/admin/settings" element={<AdminSettings />} />
+      <LanguageProvider>
+        <AuthProvider>
+          <CartProvider>
+            <Routes>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/register" element={<RegisterSelect />} />
+              <Route path="/register/farmer" element={<FarmerRegister />} />
+              <Route path="/register/consumer" element={<ConsumerRegister />} />
+              <Route path="/register/coordinator" element={<CoordinatorRegister />} />
+              
+              <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
+                <Route element={<DashboardLayout role="ADMIN" />}>
+                  <Route path="/admin" element={<AdminDashboard />} />
+                  <Route path="/admin/prices" element={<PriceManagement />} />
+                  <Route path="/admin/farmers" element={<FarmerManagement />} />
+                  <Route path="/admin/consumers" element={<ConsumerManagement />} />
+                  <Route path="/admin/coordinators" element={<CoordinatorManagement />} />
+                  <Route path="/admin/orders" element={<AdminOrders />} />
+                  <Route path="/admin/products" element={<AdminProducts />} />
+                  <Route path="/admin/reports" element={<AdminReports />} />
+                  <Route path="/admin/notifications" element={<AdminNotifications />} />
+                  <Route path="/admin/settings" element={<AdminSettings />} />
+                </Route>
               </Route>
-            </Route>
-            
-            <Route element={<ProtectedRoute allowedRoles={['FARMER']} />}>
-              <Route element={<DashboardLayout role="FARMER" />}>
-                <Route path="/farmer" element={<FarmerDashboard />} />
-                <Route path="/farmer/produce" element={<MyProduce />} />
-                <Route path="/farmer/add-produce" element={<AddProduce />} />
-                <Route path="/farmer/orders" element={<FarmerOrders />} />
-                <Route path="/farmer/earnings" element={<FarmerEarnings />} />
-                <Route path="/farmer/profile" element={<FarmerProfile />} />
-                <Route path="/farmer/notifications" element={<FarmerNotifications />} />
+              
+              <Route element={<ProtectedRoute allowedRoles={['FARMER']} />}>
+                <Route element={<DashboardLayout role="FARMER" />}>
+                  <Route path="/farmer" element={<FarmerDashboard />} />
+                  <Route path="/farmer/produce" element={<MyProduce />} />
+                  <Route path="/farmer/add-produce" element={<AddProduce />} />
+                  <Route path="/farmer/orders" element={<FarmerOrders />} />
+                  <Route path="/farmer/earnings" element={<FarmerEarnings />} />
+                  <Route path="/farmer/profile" element={<FarmerProfile />} />
+                  <Route path="/farmer/notifications" element={<FarmerNotifications />} />
+                </Route>
               </Route>
-            </Route>
-            
-            <Route element={<ProtectedRoute allowedRoles={['CONSUMER']} />}>
-              <Route element={<DashboardLayout role="CONSUMER" />}>
-                <Route path="/consumer" element={<Marketplace />} />
-                <Route path="/consumer/product/:id" element={<ProductDetails />} />
-                <Route path="/consumer/cart" element={<Cart />} />
-                <Route path="/consumer/checkout" element={<Checkout />} />
-                <Route path="/consumer/orders" element={<ConsumerOrders />} />
-                <Route path="/consumer/orders/:id" element={<OrderTracking />} />
-                <Route path="/consumer/profile" element={<ConsumerProfile />} />
-                <Route path="/consumer/notifications" element={<ConsumerNotifications />} />
+              
+              <Route element={<ProtectedRoute allowedRoles={['CONSUMER']} />}>
+                <Route element={<DashboardLayout role="CONSUMER" />}>
+                  <Route path="/consumer" element={<Marketplace />} />
+                  <Route path="/consumer/product/:id" element={<ProductDetails />} />
+                  <Route path="/consumer/cart" element={<Cart />} />
+                  <Route path="/consumer/checkout" element={<Checkout />} />
+                  <Route path="/consumer/orders" element={<ConsumerOrders />} />
+                  <Route path="/consumer/orders/:id" element={<OrderTracking />} />
+                  <Route path="/consumer/profile" element={<ConsumerProfile />} />
+                  <Route path="/consumer/notifications" element={<ConsumerNotifications />} />
+                </Route>
               </Route>
-            </Route>
-            
-            <Route element={<ProtectedRoute allowedRoles={['COORDINATOR']} />}>
-              <Route element={<DashboardLayout role="COORDINATOR" />}>
-                <Route path="/coordinator" element={<CoordinatorDashboard />} />
-                <Route path="/coordinator/orders" element={<PreBookedOrders />} />
-                <Route path="/coordinator/orders/:id" element={<OrderDetails />} />
-                <Route path="/coordinator/completed" element={<CompletedOrders />} />
-                <Route path="/coordinator/farmers" element={<CoordFarmers />} />
-                <Route path="/coordinator/customers" element={<CoordCustomers />} />
-                <Route path="/coordinator/reports" element={<CoordReports />} />
-                <Route path="/coordinator/notifications" element={<CoordNotifications />} />
+              
+              <Route element={<ProtectedRoute allowedRoles={['COORDINATOR']} />}>
+                <Route element={<DashboardLayout role="COORDINATOR" />}>
+                  <Route path="/coordinator" element={<CoordinatorDashboard />} />
+                  <Route path="/coordinator/orders" element={<PreBookedOrders />} />
+                  <Route path="/coordinator/orders/:id" element={<OrderDetails />} />
+                  <Route path="/coordinator/completed" element={<CompletedOrders />} />
+                  <Route path="/coordinator/farmers" element={<CoordFarmers />} />
+                  <Route path="/coordinator/customers" element={<CoordCustomers />} />
+                  <Route path="/coordinator/reports" element={<CoordReports />} />
+                  <Route path="/coordinator/notifications" element={<CoordNotifications />} />
+                </Route>
               </Route>
-            </Route>
-            
-            <Route path="*" element={<Navigate to="/" />} />
-          </Routes>
-        </CartProvider>
-      </AuthProvider>
+              
+              <Route path="*" element={<Navigate to="/" />} />
+            </Routes>
+          </CartProvider>
+        </AuthProvider>
+      </LanguageProvider>
     </ToastProvider>
   );
 }

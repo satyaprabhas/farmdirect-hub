@@ -3,6 +3,7 @@ import { Eye } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import api from '../../api/client';
 import { useToast } from '../../context/ToastContext';
+import { useLanguage } from '../../context/LanguageContext';
 import StatusBadge from '../../components/common/StatusBadge';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 
@@ -20,6 +21,7 @@ const PreBookedOrders: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('All');
   const { showToast } = useToast();
+  const { t, translateVeg, language } = useLanguage();
 
   const fetchOrders = async (statusFilter = 'All') => {
     setLoading(true);
@@ -42,11 +44,11 @@ const PreBookedOrders: React.FC = () => {
   }, [filter]);
 
   const handleStatusChange = async (orderId: number, newStatus: string) => {
-    if (!window.confirm(`Change order status to ${newStatus}?`)) return;
+    if (!window.confirm(language === 'te' ? `ఆర్డర్ స్థితిని ${t('status.' + newStatus, newStatus)}కి మార్చాలా?` : `Change order status to ${newStatus}?`)) return;
     
     try {
       await api.put(`/coordinator/orders/${orderId}/status`, { status: newStatus });
-      showToast('Order status updated successfully', 'success');
+      showToast(language === 'te' ? 'ఆర్డర్ స్థితి విజయవంతంగా నవీకరించబడింది' : 'Order status updated successfully', 'success');
       fetchOrders(filter);
     } catch (error) {
       console.error('Error updating status:', error);
@@ -56,9 +58,19 @@ const PreBookedOrders: React.FC = () => {
 
   const tabs = ['All', 'PLACED', 'CONFIRMED', 'OUT_FOR_DELIVERY', 'DELIVERED'];
 
+  const getTabLabel = (tab: string) => {
+    if (tab === 'All') return t('coord.allOrders', 'All Orders');
+    if (tab === 'PLACED') return t('coord.new', 'New');
+    if (tab === 'OUT_FOR_DELIVERY') return t('coord.inTransit', 'In Transit');
+    if (tab === 'DELIVERED') return t('coord.delivered', 'Delivered');
+    return t(`status.${tab}`, tab.charAt(0) + tab.slice(1).toLowerCase());
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
-      <h1 className="text-2xl font-bold text-gray-900">Pre-Booked Orders</h1>
+      <h1 className="text-2xl font-bold text-gray-900">
+        {t('coord.preBooked', 'Pre-Booked Orders')}
+      </h1>
       
       <div className="flex space-x-1 bg-gray-100 rounded-xl p-1 overflow-x-auto">
         {tabs.map(tab => (
@@ -69,7 +81,7 @@ const PreBookedOrders: React.FC = () => {
             }`}
             onClick={() => setFilter(tab)}
           >
-            {tab === 'PLACED' ? 'New' : tab === 'OUT_FOR_DELIVERY' ? 'In Transit' : tab === 'All' ? 'All Orders' : tab.charAt(0) + tab.slice(1).toLowerCase()}
+            {getTabLabel(tab)}
           </button>
         ))}
       </div>
@@ -82,13 +94,13 @@ const PreBookedOrders: React.FC = () => {
             <table className="w-full text-left border-collapse min-w-[900px]">
               <thead>
                 <tr className="border-b bg-gray-50 text-gray-600 text-xs uppercase tracking-wider">
-                  <th className="p-4 font-medium">Order #</th>
-                  <th className="p-4 font-medium">Items</th>
-                  <th className="p-4 font-medium">Consumer</th>
-                  <th className="p-4 font-medium">Amount</th>
-                  <th className="p-4 font-medium">Status</th>
-                  <th className="p-4 font-medium">Date</th>
-                  <th className="p-4 font-medium">Actions</th>
+                  <th className="p-4 font-medium">{t('coord.orderNum', 'Order #')}</th>
+                  <th className="p-4 font-medium">{t('coord.items', 'Items')}</th>
+                  <th className="p-4 font-medium">{t('coord.consumer', 'Consumer')}</th>
+                  <th className="p-4 font-medium">{t('coord.amount', 'Amount')}</th>
+                  <th className="p-4 font-medium">{t('coord.status', 'Status')}</th>
+                  <th className="p-4 font-medium">{t('coord.date', 'Date')}</th>
+                  <th className="p-4 font-medium">{t('coord.actions', 'Actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -96,12 +108,12 @@ const PreBookedOrders: React.FC = () => {
                   <tr key={order.id} className="hover:bg-gray-50 transition-colors text-sm">
                     <td className="p-4 font-semibold text-gray-900">{order.order_number}</td>
                     <td className="p-4 text-gray-600">
-                      {order.items?.map((item: any) => `${item.vegetable_name} (${item.quantity}${item.unit}) - from ${item.farmer_name || 'Unknown'}`).join(', ')}
+                      {order.items?.map((item: any) => `${translateVeg(item.vegetable_name)} (${item.quantity}${t('unit.' + item.unit, item.unit)}) - ${language === 'te' ? 'రైతు' : 'from'}: ${item.farmer_name || 'రైతు'}`).join(', ')}
                     </td>
                     <td className="p-4 text-gray-600">{order.consumer_name}</td>
                     <td className="p-4 font-medium text-gray-900">₹{order.total_amount}</td>
                     <td className="p-4"><StatusBadge status={order.status} /></td>
-                    <td className="p-4 text-gray-500">{new Date(order.placed_at).toLocaleDateString()}</td>
+                    <td className="p-4 text-gray-500">{new Date(order.placed_at).toLocaleDateString(language === 'te' ? 'te-IN' : 'en-US')}</td>
                     <td className="p-4">
                       <div className="flex items-center space-x-3">
                         <Link to={`/coordinator/orders/${order.id}`} className="text-gray-400 hover:text-green-600 transition-colors">
@@ -113,7 +125,7 @@ const PreBookedOrders: React.FC = () => {
                           className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white focus:ring-green-500 focus:border-green-500"
                         >
                           {STATUS_OPTIONS.map(status => (
-                            <option key={status} value={status}>{status.replace(/_/g, ' ')}</option>
+                            <option key={status} value={status}>{t(`status.${status}`, status.replace(/_/g, ' '))}</option>
                           ))}
                         </select>
                       </div>
@@ -122,9 +134,9 @@ const PreBookedOrders: React.FC = () => {
                 ))}
                 {orders.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="p-12 text-center text-gray-500">
-                      <p className="font-medium text-lg mb-1">No orders found</p>
-                      <p className="text-sm">Orders matching this filter will appear here.</p>
+                    <td colSpan={7} className="p-12 text-center text-gray-500">
+                      <p className="font-medium text-lg mb-1">{t('coord.noOrders', 'No orders found')}</p>
+                      <p className="text-sm">{t('coord.noOrdersDesc', 'Orders matching this filter will appear here.')}</p>
                     </td>
                   </tr>
                 )}

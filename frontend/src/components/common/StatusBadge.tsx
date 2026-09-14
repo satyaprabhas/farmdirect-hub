@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface StatusBadgeProps {
   status: string;
@@ -7,6 +8,8 @@ interface StatusBadgeProps {
 
 const statusConfig: Record<string, { bg: string; text: string; dot: string }> = {
   PLACED: { bg: 'bg-blue-100', text: 'text-blue-700', dot: 'bg-blue-500' },
+  PENDING: { bg: 'bg-yellow-100', text: 'text-yellow-700', dot: 'bg-yellow-500' },
+  PROCESSING: { bg: 'bg-indigo-100', text: 'text-indigo-700', dot: 'bg-indigo-500' },
   CONFIRMED: { bg: 'bg-yellow-100', text: 'text-yellow-700', dot: 'bg-yellow-500' },
   ASSIGNED: { bg: 'bg-purple-100', text: 'text-purple-700', dot: 'bg-purple-500' },
   PICKUP: { bg: 'bg-orange-100', text: 'text-orange-700', dot: 'bg-orange-500' },
@@ -19,14 +22,16 @@ const statusConfig: Record<string, { bg: string; text: string; dot: string }> = 
 };
 
 export default function StatusBadge({ status, className }: StatusBadgeProps) {
-  const safeStatus = status || 'UNKNOWN';
+  const { t } = useLanguage();
+  const safeStatus = (status || 'UNKNOWN').toUpperCase().replace(/\s+/g, '_');
   const config = statusConfig[safeStatus] || { bg: 'bg-gray-100', text: 'text-gray-700', dot: 'bg-gray-500' };
-  const label = safeStatus.replace(/_/g, ' ');
+  const englishLabel = (status || 'UNKNOWN').replace(/_/g, ' ');
+  const localizedLabel = t(`status.${safeStatus}`, englishLabel);
 
   return (
     <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${config.bg} ${config.text} ${className || ''}`}>
       <span className={`w-1.5 h-1.5 rounded-full ${config.dot}`} />
-      {label}
+      {localizedLabel}
     </span>
   );
 }
