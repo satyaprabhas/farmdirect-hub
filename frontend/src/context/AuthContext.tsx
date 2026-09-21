@@ -6,7 +6,7 @@ interface User {
   full_name: string;
   username: string;
   mobile_number: string;
-  role: 'FARMER' | 'CONSUMER' | 'COORDINATOR' | 'ADMIN';
+  role: 'FARMER' | 'CONSUMER' | 'COORDINATOR' | 'ADMIN' | 'ADVISER' | 'LARGE_SCALE_CONSUMER';
   email?: string;
   address?: string;
   village?: string;
@@ -17,6 +17,10 @@ interface User {
   is_active?: number;
   farm_name?: string;
   farm_type?: string;
+  specialization?: string;
+  qualification?: string;
+  license_number?: string;
+  experience_years?: number;
 }
 
 interface AuthContextType {
@@ -27,6 +31,7 @@ interface AuthContextType {
   login: (username: string, password: string, role: string) => Promise<void>;
   register: (data: any) => Promise<void>;
   logout: () => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -35,6 +40,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUserState] = useState<User | null>(null);
   const [token, setTokenState] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const refreshUser = async () => {
+    try {
+      const res = await api.get('/auth/me');
+      if (res.data?.user) {
+        setUserState(res.data.user);
+        setUser(res.data.user);
+      }
+    } catch (e) {
+      console.error('Failed to refresh user:', e);
+    }
+  };
 
   useEffect(() => {
     const savedToken = getToken();
@@ -91,6 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         register,
         logout,
+        refreshUser,
       }}
     >
       {children}

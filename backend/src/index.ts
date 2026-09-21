@@ -19,6 +19,7 @@ import orderRoutes from './routes/orders';
 import coordinatorRoutes from './routes/coordinator';
 import notificationRoutes from './routes/notifications';
 import profileRoutes from './routes/profile';
+import adviserRoutes from './routes/adviser';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -48,6 +49,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/farmer', farmerRoutes);
 app.use('/api/consumer', consumerRoutes);
+app.use('/api/adviser', adviserRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);

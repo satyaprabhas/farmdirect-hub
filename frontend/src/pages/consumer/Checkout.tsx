@@ -6,7 +6,7 @@ import { useToast } from '../../context/ToastContext';
 import { useLanguage } from '../../context/LanguageContext';
 import api from '../../api/client';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
-import { Truck, MapPin, CheckCircle2 } from 'lucide-react';
+import { Truck, MapPin, CheckCircle2, CreditCard } from 'lucide-react';
 
 export default function Checkout() {
   const { user } = useAuth();
@@ -18,9 +18,44 @@ export default function Checkout() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [orderNumber, setOrderNumber] = useState('');
+  const [placedAdvance, setPlacedAdvance] = useState(0);
+  const [placedRemaining, setPlacedRemaining] = useState(0);
   
-  const [deliveryType, setDeliveryType] = useState<'HOME_DELIVERY' | 'HUB_PICKUP'>('HOME_DELIVERY');
+  const isBulkBuyer = user?.role === 'LARGE_SCALE_CONSUMER';
+  const [deliveryType, setDeliveryType] = useState<'HOME_DELIVERY' | 'HUB_PICKUP'>(
+    isBulkBuyer ? 'HUB_PICKUP' : 'HUB_PICKUP'
+  );
+
+  useEffect(() => {
+    if (isBulkBuyer) {
+      setDeliveryType('HUB_PICKUP');
+    }
+  }, [isBulkBuyer]);
+
   const actualDeliveryFee = deliveryType === 'HUB_PICKUP' ? 0 : deliveryFee;
+  const totalAmount = cartTotal + actualDeliveryFee;
+  const advanceAmount = Math.round((totalAmount * 0.25) * 100) / 100;
+  const remainingAmount = Math.round((totalAmount - advanceAmount) * 100) / 100;
+
+  // Minimum order validation checks
+  let minOrderError = '';
+  if (isBulkBuyer) {
+    if (cartTotal < 500) {
+      minOrderError = language === 'te' 
+        ? 'భారీ వినియోగదారులకు కనీస ఆర్డర్ మొత్తం ₹500 ఉండాలి.' 
+        : 'Minimum order amount for Large Scale Consumers is ₹500.';
+    }
+  } else {
+    if (deliveryType === 'HUB_PICKUP' && cartTotal < 100) {
+      minOrderError = language === 'te' 
+        ? 'హబ్ వద్ద తీసుకోవడానికి కనీస ఆర్డర్ మొత్తం ₹100 ఉండాలి.' 
+        : 'Minimum order amount for Hub Pickup is ₹100.';
+    } else if (deliveryType === 'HOME_DELIVERY' && cartTotal < 300) {
+      minOrderError = language === 'te' 
+        ? 'ఇంటి డెలివరీకి కనీస ఆర్డర్ మొత్తం ₹300 ఉండాలి.' 
+        : 'Minimum order amount for Home Delivery is ₹300.';
+    }
+  }
 
   const [formData, setFormData] = useState({
     delivery_address: '',
@@ -58,6 +93,11 @@ export default function Checkout() {
   };
 
   const handlePlaceOrder = async () => {
+    if (minOrderError) {
+      showToast(minOrderError, 'error');
+      return;
+    }
+
     if (deliveryType === 'HOME_DELIVERY' && (!formData.delivery_address || !formData.delivery_village || !formData.delivery_district || !formData.delivery_state || !formData.delivery_pincode)) {
       showToast(t('cart.fillDetails', 'Please fill all delivery details'), 'error');
       return;
@@ -67,6 +107,8 @@ export default function Checkout() {
     try {
       const res = await api.post('/orders', { ...formData, delivery_type: deliveryType });
       setOrderNumber(res.data.order_number || `FDH-${Math.floor(10000 + Math.random() * 90000)}`);
+      setPlacedAdvance(advanceAmount);
+      setPlacedRemaining(remainingAmount);
       await clearCart();
       setSuccess(true);
       showToast(language === 'te' ? 'ఆర్డర్ విజయవంతంగా నమోదైంది!' : 'Order placed successfully!', 'success');
@@ -96,11 +138,24 @@ export default function Checkout() {
             {t('cart.orderSuccessSubtitle', 'Thank you for your purchase.')}
           </p>
           
-          <div className="bg-gray-50 rounded-xl p-4 mb-8">
-            <p className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-1">
-              {t('cart.orderNumber', 'Order Number')}
-            </p>
-            <p className="text-2xl font-bold text-green-700">{orderNumber}</p>
+          <div className="bg-gray-50 rounded-xl p-4 mb-6 space-y-3">
+            <div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-0.5">
+                {t('cart.orderNumber', 'Order Number')}
+              </p>
+              <p className="text-2xl font-bold text-green-700">{orderNumber}</p>
+            </div>
+            
+            <div className="pt-3 border-t border-gray-200 grid grid-cols-2 gap-2 text-xs">
+              <div className="bg-amber-50 p-2.5 rounded-lg border border-amber-200 text-left">
+                <span className="text-amber-800 font-semibold block">{language === 'te' ? 'చెల్లించిన అడ్వాన్స్ (25%)' : 'Advance Paid (25%)'}</span>
+                <span className="text-sm font-bold text-amber-950">₹{placedAdvance.toFixed(2)}</span>
+              </div>
+              <div className="bg-blue-50 p-2.5 rounded-lg border border-blue-200 text-left">
+                <span className="text-blue-800 font-semibold block">{language === 'te' ? 'హబ్ వద్ద చెల్లించవలసినది (75%)' : 'Due at Hub/Delivery (75%)'}</span>
+                <span className="text-sm font-bold text-blue-950">₹{placedRemaining.toFixed(2)}</span>
+              </div>
+            </div>
           </div>
 
           <div className="space-y-3">
@@ -147,23 +202,60 @@ export default function Checkout() {
             </div>
 
             <div className="mb-8">
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                {t('cart.deliveryType', 'Select Option')}
-              </label>
-              <div className="flex gap-4">
-                <label className={`flex-1 border rounded-xl p-4 cursor-pointer flex items-center gap-3 transition-colors ${deliveryType === 'HOME_DELIVERY' ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-green-200'}`}>
-                  <input type="radio" name="deliveryType" checked={deliveryType === 'HOME_DELIVERY'} onChange={() => setDeliveryType('HOME_DELIVERY')} className="text-green-600 focus:ring-green-500 w-4 h-4" />
-                  <span className={`font-medium ${deliveryType === 'HOME_DELIVERY' ? 'text-green-800' : 'text-gray-700'}`}>
-                    {t('cart.homeDeliveryOption', 'Home Delivery')}
-                  </span>
-                </label>
-                <label className={`flex-1 border rounded-xl p-4 cursor-pointer flex items-center gap-3 transition-colors ${deliveryType === 'HUB_PICKUP' ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-green-200'}`}>
-                  <input type="radio" name="deliveryType" checked={deliveryType === 'HUB_PICKUP'} onChange={() => setDeliveryType('HUB_PICKUP')} className="text-green-600 focus:ring-green-500 w-4 h-4" />
-                  <span className={`font-medium ${deliveryType === 'HUB_PICKUP' ? 'text-green-800' : 'text-gray-700'}`}>
-                    {t('cart.hubPickupOption', 'Hub Pickup')}
-                  </span>
-                </label>
-              </div>
+              {isBulkBuyer ? (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    {t('cart.deliveryType', 'Delivery Option')}
+                  </label>
+                  <div className="border-2 border-emerald-500 bg-emerald-50 rounded-xl p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <input type="radio" checked readOnly className="text-emerald-600 focus:ring-emerald-500 w-4 h-4" />
+                      <div>
+                        <span className="font-bold text-emerald-900 block">
+                          {t('cart.hubPickupOption', 'Hub Pickup (Free)')}
+                        </span>
+                        <span className="text-xs text-emerald-700">
+                          {t('bulk.minNotice', 'Wholesale orders must be collected directly from FarmDirect Hub (Min. ₹500).')}
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-xs font-bold uppercase bg-emerald-200 text-emerald-800 px-2.5 py-1 rounded-md">
+                      Bulk Hub Only
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="block text-sm font-semibold text-gray-700">
+                      {t('cart.deliveryType', 'Select Option')}
+                    </label>
+                    <span className="text-xs text-amber-800 font-semibold bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                      Hub Min: ₹100 | Delivery Min: ₹300
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <label className={`border-2 rounded-xl p-4 cursor-pointer flex items-center gap-3 transition-colors ${deliveryType === 'HUB_PICKUP' ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-green-200'}`}>
+                      <input type="radio" name="deliveryType" checked={deliveryType === 'HUB_PICKUP'} onChange={() => setDeliveryType('HUB_PICKUP')} className="text-green-600 focus:ring-green-500 w-4 h-4" />
+                      <div>
+                        <span className={`font-bold block ${deliveryType === 'HUB_PICKUP' ? 'text-green-800' : 'text-gray-700'}`}>
+                          {t('cart.hubPickupOption', 'Hub Pickup (Free)')}
+                        </span>
+                        <span className="text-xs text-gray-500">{t('cart.minHubOrderNotice', 'Min order ₹100')}</span>
+                      </div>
+                    </label>
+                    <label className={`border-2 rounded-xl p-4 cursor-pointer flex items-center gap-3 transition-colors ${deliveryType === 'HOME_DELIVERY' ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-green-200'}`}>
+                      <input type="radio" name="deliveryType" checked={deliveryType === 'HOME_DELIVERY'} onChange={() => setDeliveryType('HOME_DELIVERY')} className="text-green-600 focus:ring-green-500 w-4 h-4" />
+                      <div>
+                        <span className={`font-bold block ${deliveryType === 'HOME_DELIVERY' ? 'text-green-800' : 'text-gray-700'}`}>
+                          {t('cart.homeDeliveryOption', 'Home Delivery (₹20)')}
+                        </span>
+                        <span className="text-xs text-gray-500">{t('cart.minDeliveryOrderNotice', 'Min order ₹300')}</span>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
@@ -290,7 +382,7 @@ export default function Checkout() {
               ))}
             </div>
 
-            <div className="space-y-4 bg-gray-50 p-4 rounded-xl mb-6">
+            <div className="space-y-3 bg-gray-50 p-4 rounded-xl mb-4">
               <div className="flex justify-between text-gray-600 font-medium text-sm">
                 <span>{t('cart.subtotal', 'Subtotal')}</span>
                 <span>₹{cartTotal.toFixed(2)}</span>
@@ -299,32 +391,61 @@ export default function Checkout() {
                 <span>{t('cart.deliveryFee', 'Delivery Fee')}</span>
                 <span>{actualDeliveryFee === 0 ? t('cart.freeHub', 'Free (Hub Pickup)') : `₹${actualDeliveryFee.toFixed(2)}`}</span>
               </div>
-              <div className="pt-3 border-t border-gray-200">
-                <div className="flex justify-between items-end">
-                  <span className="text-base font-bold text-gray-900">{t('cart.total', 'Total Amount')}</span>
-                  <span className="text-2xl font-extrabold text-green-600 tracking-tight">
-                    ₹{(cartTotal + actualDeliveryFee).toFixed(2)}
-                  </span>
-                </div>
+              <div className="pt-2 border-t border-gray-200 flex justify-between items-end">
+                <span className="text-sm font-bold text-gray-900">{t('cart.total', 'Total Billed Amount')}</span>
+                <span className="text-xl font-extrabold text-gray-900">
+                  ₹{totalAmount.toFixed(2)}
+                </span>
               </div>
             </div>
 
+            {/* 25% Security Deposit Breakdown */}
+            <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 space-y-3 mb-4 text-xs shadow-sm">
+              <div className="flex justify-between items-center font-bold text-amber-950">
+                <span className="text-sm flex items-center gap-1.5">
+                  <CreditCard className="w-4 h-4 text-amber-800" />
+                  {t('cart.advanceDeposit', 'Security Deposit (25% Pay Now)')}:
+                </span>
+                <span className="text-base font-black text-amber-900">₹{advanceAmount.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between items-center text-amber-800 font-medium">
+                <span>{t('cart.remainingAmount', 'Remaining (75% at Hub/Delivery)')}:</span>
+                <span className="font-bold">₹{remainingAmount.toFixed(2)}</span>
+              </div>
+              <p className="text-[11px] text-amber-900 pt-2 border-t border-amber-200/80 leading-relaxed">
+                <strong>{language === 'te' ? 'చెల్లింపు నిబంధన:' : 'Payment Note:'}</strong> {t('cart.advanceNote', 'Pay only 25% advance now as security deposit. Pay the remaining 75% upon produce collection.')}
+              </p>
+            </div>
+
+            {/* Minimum Order Warning if applicable */}
+            {minOrderError && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 font-semibold mb-4">
+                ⚠️ {minOrderError}
+              </div>
+            )}
+
             <button
               onClick={handlePlaceOrder}
-              disabled={loading}
-              className="w-full bg-green-600 hover:bg-green-700 text-white font-bold text-lg py-4 px-6 rounded-xl flex items-center justify-center gap-3 transition-all shadow-lg hover:shadow-green-500/30 disabled:opacity-70 disabled:cursor-not-allowed"
+              disabled={loading || !!minOrderError}
+              className="w-full bg-green-600 hover:bg-green-700 text-white font-bold text-base py-4 px-6 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-green-500/30 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               {loading ? (
                 <LoadingSpinner size="sm" />
               ) : (
                 <>
                   <Truck className="w-5 h-5" />
-                  {t('cart.placeOrder', 'Place Order')}
+                  <span>
+                    {language === 'te' 
+                      ? `25% డిపాజిట్ చెల్లించి బుక్ చేయండి (₹${advanceAmount.toFixed(2)})` 
+                      : `Pay 25% Deposit & Book (₹${advanceAmount.toFixed(2)})`}
+                  </span>
                 </>
               )}
             </button>
-            <p className="text-center text-xs text-gray-500 mt-4 font-medium flex items-center justify-center gap-1">
-              {t('cart.codNotice', 'Payment is collected upon delivery (COD).')}
+            <p className="text-center text-[11px] text-gray-500 mt-3 font-medium">
+              {language === 'te' 
+                ? 'మిగిలిన 75% మొత్తం పంటను హబ్ వద్ద తీసుకునే సమయంలో చెల్లించవచ్చు.' 
+                : 'The remaining 75% balance is payable at the Hub upon collection.'}
             </p>
           </div>
         </div>

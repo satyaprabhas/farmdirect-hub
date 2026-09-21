@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../api/client';
+import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import StatusBadge from '../../components/common/StatusBadge';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
-import { MapPin, User, Phone, ArrowLeft, Package } from 'lucide-react';
+import { MapPin, User, Phone, ArrowLeft, Package, AlertTriangle } from 'lucide-react';
 
 const STATUS_OPTIONS = [
   'PLACED', 'CONFIRMED', 'PICKUP', 'OUT_FOR_DELIVERY', 'DELIVERED', 'CANCELLED'
@@ -13,11 +14,15 @@ const STATUS_OPTIONS = [
 const OrderDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user, refreshUser } = useAuth();
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const { showToast } = useToast();
 
+  const isVerified = user?.is_verified === 1;
+
   useEffect(() => {
+    refreshUser?.();
     const fetchOrder = async () => {
       try {
         const response = await api.get(`/coordinator/orders/${id}`);
@@ -33,13 +38,19 @@ const OrderDetails: React.FC = () => {
   }, [id]);
 
   const handleStatusChange = async (newStatus: string) => {
+    if (!isVerified) {
+      showToast('Your coordinator account is pending Admin approval. You cannot update order status.', 'error');
+      return;
+    }
+
     if (!window.confirm(`Change order status to ${newStatus}?`)) return;
     try {
       await api.put(`/coordinator/orders/${id}/status`, { status: newStatus });
       showToast('Status updated successfully', 'success');
       setOrder((prev: any) => ({ ...prev, status: newStatus }));
-    } catch (error) {
-      showToast('Failed to update status', 'error');
+    } catch (error: any) {
+      const errMsg = error.response?.data?.error || 'Failed to update status';
+      showToast(errMsg, 'error');
     }
   };
 
@@ -123,18 +134,35 @@ const OrderDetails: React.FC = () => {
 
           {/* Update Status */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <h3 className="font-semibold text-gray-900 mb-4">Update Status</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-gray-900">Update Status</h3>
+              {!isVerified && (
+                <span className="text-[11px] font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3" /> Approval Required
+                </span>
+              )}
+            </div>
+
+            {!isVerified && (
+              <p className="text-xs text-amber-700 mb-3 bg-amber-50 p-2.5 rounded-xl border border-amber-200">
+                Your coordinator account is pending approval by the Admin. You cannot update order status until approved.
+              </p>
+            )}
+
             <div className="space-y-2">
               {STATUS_OPTIONS.map(status => (
                 <button
                   key={status}
                   onClick={() => handleStatusChange(status)}
-                  disabled={order.status === status}
+                  disabled={!isVerified || order.status === status}
                   className={`w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
                     order.status === status 
-                      ? 'bg-green-100 text-green-800 ring-2 ring-green-500' 
-                      : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                      ? 'bg-green-100 text-green-800 ring-2 ring-green-500 font-bold' 
+                      : !isVerified
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
                   }`}
+                  title={!isVerified ? 'Account pending Admin approval' : undefined}
                 >
                   {status.replace(/_/g, ' ')}
                 </button>

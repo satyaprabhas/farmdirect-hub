@@ -5,7 +5,7 @@ import { authorizeRoles } from '../middleware/roleGuard';
 
 const router = express.Router();
 router.use(authenticateToken);
-router.use(authorizeRoles('CONSUMER'));
+router.use(authorizeRoles('CONSUMER', 'LARGE_SCALE_CONSUMER'));
 
 router.get('/', (req: AuthRequest, res) => {
   try {
@@ -42,8 +42,13 @@ router.get('/', (req: AuthRequest, res) => {
 router.post('/items', (req: AuthRequest, res) => {
   const { produce_id, quantity } = req.body;
   try {
-    const produce: any = db.prepare("SELECT * FROM farmer_produce WHERE id = ? AND status = 'ACTIVE'").get(produce_id);
-    if (!produce) return res.status(404).json({ error: 'Produce not found or inactive' });
+    const produce: any = db.prepare(`
+      SELECT fp.* 
+      FROM farmer_produce fp
+      JOIN users u ON fp.farmer_id = u.id
+      WHERE fp.id = ? AND fp.status = 'ACTIVE' AND u.is_verified = 1 AND u.is_active = 1
+    `).get(produce_id);
+    if (!produce) return res.status(404).json({ error: 'Produce not found, inactive, or pending farmer approval' });
     if (produce.available_quantity < quantity) return res.status(400).json({ error: 'Not enough quantity' });
     
     let cart: any = db.prepare("SELECT id FROM carts WHERE consumer_id = ?").get(req.user.id);
@@ -52,9 +57,13 @@ router.post('/items', (req: AuthRequest, res) => {
     }
     
     const existing: any = db.prepare("SELECT * FROM cart_items WHERE cart_id = ? AND produce_id = ?").get(cart.id, produce_id);
+    const newQ = (existing ? existing.quantity : 0) + quantity;
+    if (req.user.role === 'CONSUMER' && newQ > 5) {
+      return res.status(400).json({ error: 'Retail consumers cannot order more than 5 kg per item' });
+    }
+    if (produce.available_quantity < newQ) return res.status(400).json({ error: 'Not enough quantity' });
+    
     if (existing) {
-      const newQ = existing.quantity + quantity;
-      if (produce.available_quantity < newQ) return res.status(400).json({ error: 'Not enough quantity' });
       db.prepare("UPDATE cart_items SET quantity = ? WHERE id = ?").run(newQ, existing.id);
     } else {
       db.prepare("INSERT INTO cart_items (cart_id, produce_id, quantity) VALUES (?, ?, ?)").run(cart.id, produce_id, quantity);
@@ -69,6 +78,9 @@ router.post('/items', (req: AuthRequest, res) => {
 router.put('/items/:id', (req: AuthRequest, res) => {
   const { quantity } = req.body;
   try {
+    if (req.user.role === 'CONSUMER' && quantity > 5) {
+      return res.status(400).json({ error: 'Retail consumers cannot order more than 5 kg per item' });
+    }
     const item: any = db.prepare("SELECT * FROM cart_items WHERE id = ?").get(req.params.id);
     if (!item) return res.status(404).json({ error: 'Item not found' });
     

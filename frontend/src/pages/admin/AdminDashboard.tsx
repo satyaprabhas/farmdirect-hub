@@ -8,13 +8,18 @@ import StatusBadge from '../../components/common/StatusBadge';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { 
   Users, ShoppingCart, Truck, Package, 
-  ClipboardList, Clock, CheckCircle, IndianRupee 
+  ClipboardList, Clock, CheckCircle, IndianRupee, GraduationCap 
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface DashboardData {
   totalFarmers: number;
+  approvedFarmers?: number;
+  pendingFarmers?: number;
   totalConsumers: number;
+  totalAdvisers?: number;
   totalCoordinators: number;
+  pendingCoordinators?: number;
   totalProducts: number;
   totalOrders: number;
   pendingOrders: number;
@@ -25,6 +30,7 @@ interface DashboardData {
 }
 
 const AdminDashboard: React.FC = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { showToast } = useToast();
   const { t, translateVeg, language } = useLanguage();
@@ -58,13 +64,51 @@ const AdminDashboard: React.FC = () => {
         <p className="text-gray-500">{t('farmer.welcomeBack', 'Welcome back')}, {user?.full_name}</p>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {/* Alert Banner if Farmers are waiting for Admin Approval to sell */}
+      {(data.pendingFarmers || 0) > 0 && (
+        <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-2xl shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-start gap-3">
+            <Clock className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <h4 className="text-sm font-bold text-amber-900">
+                {language === 'te' 
+                  ? `${data.pendingFarmers} రైతులు అమ్మకాల ఆమోదం కోసం వేచి ఉన్నారు` 
+                  : `${data.pendingFarmers} Farmer(s) Awaiting Selling Approval`}
+              </h4>
+              <p className="text-xs text-amber-800 mt-0.5">
+                {language === 'te'
+                  ? 'రైతులు ఉత్పత్తులను విక్రయించడానికి మీ ఆమోదం అవసరం. దయచేసి రైతు నిర్వహణలో పరిశీలించి ఆమోదించండి.'
+                  : 'Farmers cannot list or sell produce until approved by Admin. Review pending applications and authorize selling.'}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => navigate('/admin/farmers')}
+            className="bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition-colors shadow-sm whitespace-nowrap self-start sm:self-auto"
+          >
+            {language === 'te' ? 'రైతులను పరిశీలించండి →' : 'Review & Approve Farmers →'}
+          </button>
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         <DashboardCard 
           title={t('admin.totalFarmers', 'Total Farmers')} 
           value={(data.totalFarmers || 0).toString()} 
           icon={<Users className="w-6 h-6 text-green-600" />} 
           className="bg-green-50"
         />
+        <div 
+          onClick={() => navigate('/admin/advisers')}
+          className="cursor-pointer transition-transform hover:scale-[1.02]"
+        >
+          <DashboardCard 
+            title={language === 'te' ? 'వ్యవసాయ సలహాదారులు' : 'Agri Advisers'} 
+            value={((data as any).totalAdvisers || 0).toString()} 
+            icon={<GraduationCap className="w-6 h-6 text-purple-600" />} 
+            className="bg-purple-50"
+          />
+        </div>
         <DashboardCard 
           title={t('admin.totalConsumers', 'Total Consumers')} 
           value={(data.totalConsumers || 0).toString()} 
@@ -74,8 +118,8 @@ const AdminDashboard: React.FC = () => {
         <DashboardCard 
           title={t('admin.totalCoordinators', 'Total Coordinators')} 
           value={(data.totalCoordinators || 0).toString()} 
-          icon={<Truck className="w-6 h-6 text-purple-600" />} 
-          className="bg-purple-50"
+          icon={<Truck className="w-6 h-6 text-indigo-600" />} 
+          className="bg-indigo-50"
         />
         <DashboardCard 
           title={t('admin.totalProducts', 'Total Products')} 

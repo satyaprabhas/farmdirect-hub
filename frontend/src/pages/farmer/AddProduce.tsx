@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Check, ChevronRight, Sprout, MapPin, Camera, ClipboardCheck, ArrowLeft } from 'lucide-react';
+import { Check, ChevronRight, Sprout, MapPin, Camera, ClipboardCheck, ArrowLeft, AlertTriangle } from 'lucide-react';
 import api from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -11,10 +11,12 @@ import ImageUploader from '../../components/common/ImageUploader';
 import PriceDisplay from '../../components/common/PriceDisplay';
 
 const AddProduce: React.FC = () => {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
   const { showToast } = useToast();
   const { t, translateVeg, language } = useLanguage();
+
+  const isVerified = user?.is_verified === 1;
   
   const [currentStep, setCurrentStep] = useState(1);
   const [vegetables, setVegetables] = useState<any[]>([]);
@@ -101,6 +103,13 @@ const AddProduce: React.FC = () => {
   };
 
   const handleSubmit = async () => {
+    if (!isVerified) {
+      showToast('error', language === 'te' 
+        ? 'మీ ఖాతా అడ్మిన్ ఆమోదం కోసం వేచి ఉంది. అడ్మిన్ ఆమోదించిన తర్వాత మాత్రమే మీరు ఉత్పత్తులను విక్రయించగలరు.' 
+        : 'Your account is pending verification by Admin. You cannot sell or list produce until approved.');
+      return;
+    }
+
     try {
       setSubmitting(true);
       
@@ -136,9 +145,10 @@ const AddProduce: React.FC = () => {
       
       showToast('success', 'Your produce has been listed successfully!');
       navigate('/farmer/produce');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error submitting produce:', error);
-      showToast('error', 'Failed to submit produce. Please try again.');
+      const errMsg = error.response?.data?.error || 'Failed to submit produce. Please try again.';
+      showToast('error', errMsg);
     } finally {
       setSubmitting(false);
     }
@@ -164,6 +174,23 @@ const AddProduce: React.FC = () => {
           {language === 'te' ? 'మీ పంటను వినియోగదారులకు విక్రయించడానికి వివరాలను నమోదు చేయండి' : 'List your harvest for sale to consumers'}
         </p>
       </div>
+
+      {/* Admin Approval Notice Banner for Unverified Farmers */}
+      {!isVerified && (
+        <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-2xl flex items-start gap-3 shadow-sm">
+          <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+          <div className="flex-1">
+            <h3 className="text-sm font-bold text-amber-900">
+              {language === 'te' ? 'అడ్మిన్ ఆమోదం కోసం వేచి ఉంది (ధృవీకరించబడలేదు)' : 'Account Pending Admin Approval (Unverified)'}
+            </h3>
+            <p className="text-xs sm:text-sm text-amber-800 mt-1">
+              {language === 'te'
+                ? 'మీ ఖాతా ఇంకా అడ్మిన్ ద్వారా ఆమోదించబడలేదు. అడ్మిన్ ధృవీకరించిన తర్వాత మాత్రమే ఉత్పత్తులను విక్రయించడానికి అనుమతించబడుతుంది.'
+                : 'Your farmer account is currently awaiting Admin approval. You will be able to submit and list fresh produce once verified by the Admin in the Admin Portal.'}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Progress Bar */}
       <div className="relative">
@@ -542,11 +569,18 @@ const AddProduce: React.FC = () => {
               </button>
               <button
                 onClick={handleSubmit}
-                disabled={submitting}
-                className="bg-green-600 hover:bg-green-700 text-white px-8 py-2.5 rounded-lg font-bold flex items-center gap-2 transition-colors shadow-md disabled:opacity-70"
+                disabled={submitting || !isVerified}
+                className={`${
+                  isVerified 
+                    ? 'bg-green-600 hover:bg-green-700 text-white shadow-md' 
+                    : 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                } px-8 py-2.5 rounded-lg font-bold flex items-center gap-2 transition-colors disabled:opacity-70`}
+                title={!isVerified ? 'Account pending Admin approval' : undefined}
               >
                 {submitting ? (
                   <><LoadingSpinner size="sm" color="white" /> {t('common.submitting', 'Submitting...')}</>
+                ) : !isVerified ? (
+                  <><AlertTriangle size={18} /> {language === 'te' ? 'అడ్మిన్ ఆమోదం అవసరం' : 'Admin Approval Required'}</>
                 ) : (
                   <><Check size={20} /> {t('farmer.submitProduce', 'Submit Produce')}</>
                 )}

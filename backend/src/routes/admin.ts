@@ -11,12 +11,18 @@ router.get('/dashboard', (req, res) => {
   try {
     const totalFarmers = (db.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'FARMER'").get() as any).count;
     const totalConsumers = (db.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'CONSUMER'").get() as any).count;
+    const totalBulkConsumers = (db.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'LARGE_SCALE_CONSUMER'").get() as any).count;
+    const totalAdvisers = (db.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'ADVISER'").get() as any).count;
     const totalCoordinators = (db.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'COORDINATOR'").get() as any).count;
+    const pendingFarmers = (db.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'FARMER' AND (is_verified = 0 OR is_verified IS NULL)").get() as any).count;
+    const approvedFarmers = (db.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'FARMER' AND is_verified = 1").get() as any).count;
+    const pendingCoordinators = (db.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'COORDINATOR' AND (is_verified = 0 OR is_verified IS NULL)").get() as any).count;
     const totalProducts = (db.prepare("SELECT COUNT(*) as count FROM farmer_produce WHERE status = 'ACTIVE'").get() as any).count;
     const totalOrders = (db.prepare("SELECT COUNT(*) as count FROM orders").get() as any).count;
     const pendingOrders = (db.prepare("SELECT COUNT(*) as count FROM orders WHERE status NOT IN ('DELIVERED', 'CANCELLED')").get() as any).count;
     const completedOrders = (db.prepare("SELECT COUNT(*) as count FROM orders WHERE status = 'DELIVERED'").get() as any).count;
     const totalSales = (db.prepare("SELECT COALESCE(SUM(total_amount), 0) as sum FROM orders WHERE status = 'DELIVERED'").get() as any).sum;
+    const totalConsultations = (db.prepare("SELECT COUNT(*) as count FROM crop_disease_consultations").get() as any).count;
 
     const recentOrders = db.prepare(`
       SELECT o.*, u.full_name as consumer_name
@@ -45,8 +51,9 @@ router.get('/dashboard', (req, res) => {
     `).all();
 
     res.json({
-      totalFarmers, totalConsumers, totalCoordinators, totalProducts,
-      totalOrders, pendingOrders, completedOrders, totalSales,
+      totalFarmers, approvedFarmers, pendingFarmers, totalConsumers, totalBulkConsumers, totalAdvisers, 
+      totalCoordinators, pendingCoordinators, totalProducts,
+      totalOrders, pendingOrders, completedOrders, totalSales, totalConsultations,
       recentOrders, topVegetables
     });
   } catch (err) {
@@ -97,17 +104,36 @@ router.delete('/vegetables/:id', (req, res) => {
 
 router.get('/farmers', (req, res) => {
   res.json(db.prepare(`
-    SELECT u.*, fp.*, (SELECT COUNT(*) FROM farmer_produce WHERE farmer_id = u.id) as produce_count
+    SELECT u.id as id, u.full_name, u.username, u.mobile_number, u.email, u.address, u.village, u.district, u.state, u.pincode,
+           u.is_verified, u.is_active, u.created_at,
+           fp.id as profile_id, fp.farm_name, fp.farm_type, fp.bank_name, fp.account_number, fp.ifsc_code, fp.account_holder_name,
+           (SELECT COUNT(*) FROM farmer_produce WHERE farmer_id = u.id) as produce_count
     FROM users u
     LEFT JOIN farmer_profiles fp ON u.id = fp.user_id
     WHERE u.role = 'FARMER'
+    ORDER BY u.created_at DESC
   `).all());
 });
 
 router.put('/farmers/:id/verify', (req, res) => {
   try {
-    db.prepare("UPDATE users SET is_verified = NOT is_verified WHERE id = ?").run(req.params.id);
-    res.json({ success: true });
+    let targetUserId = req.params.id;
+    const userExists = db.prepare("SELECT id FROM users WHERE id = ? AND role = 'FARMER'").get(targetUserId);
+    if (!userExists) {
+      const profile = db.prepare("SELECT user_id FROM farmer_profiles WHERE id = ?").get(targetUserId);
+      if (profile) {
+        targetUserId = profile.user_id;
+      }
+    }
+
+    const { is_verified } = req.body;
+    if (is_verified !== undefined) {
+      db.prepare("UPDATE users SET is_verified = ? WHERE id = ?").run(is_verified ? 1 : 0, targetUserId);
+    } else {
+      db.prepare("UPDATE users SET is_verified = 1 - is_verified WHERE id = ?").run(targetUserId);
+    }
+    const updated: any = db.prepare("SELECT is_verified FROM users WHERE id = ?").get(targetUserId);
+    res.json({ success: true, is_verified: updated ? updated.is_verified : 0, user_id: targetUserId });
   } catch (err) {
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -115,8 +141,25 @@ router.put('/farmers/:id/verify', (req, res) => {
 
 router.put('/farmers/:id/suspend', (req, res) => {
   try {
-    db.prepare("UPDATE users SET is_active = NOT is_active WHERE id = ?").run(req.params.id);
-    res.json({ success: true });
+    let targetUserId = req.params.id;
+    const userExists = db.prepare("SELECT id FROM users WHERE id = ? AND role = 'FARMER'").get(targetUserId);
+    if (!userExists) {
+      const profile = db.prepare("SELECT user_id FROM farmer_profiles WHERE id = ?").get(targetUserId);
+      if (profile) {
+        targetUserId = profile.user_id;
+      }
+    }
+
+    const { status, is_active } = req.body;
+    if (status !== undefined) {
+      db.prepare("UPDATE users SET is_active = ? WHERE id = ?").run(status === 'ACTIVE' ? 1 : 0, targetUserId);
+    } else if (is_active !== undefined) {
+      db.prepare("UPDATE users SET is_active = ? WHERE id = ?").run(is_active ? 1 : 0, targetUserId);
+    } else {
+      db.prepare("UPDATE users SET is_active = 1 - is_active WHERE id = ?").run(targetUserId);
+    }
+    const updated: any = db.prepare("SELECT is_active FROM users WHERE id = ?").get(targetUserId);
+    res.json({ success: true, is_active: updated ? updated.is_active : 1, user_id: targetUserId });
   } catch (err) {
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -130,8 +173,101 @@ router.get('/consumers', (req, res) => {
   `).all());
 });
 
+router.get('/large-scale-consumers', (req, res) => {
+  res.json(db.prepare(`
+    SELECT u.*, (SELECT COUNT(*) FROM orders WHERE consumer_id = u.id) as order_count,
+           (SELECT COALESCE(SUM(total_amount), 0) FROM orders WHERE consumer_id = u.id) as total_spent
+    FROM users u
+    WHERE u.role = 'LARGE_SCALE_CONSUMER'
+  `).all());
+});
+
+router.get('/advisers', (req, res) => {
+  res.json(db.prepare(`
+    SELECT u.id, u.username, u.full_name, u.mobile_number, u.email, u.district, u.state, u.is_active, u.is_verified,
+           ap.specialization, ap.qualification, ap.license_number, ap.experience_years, ap.bio,
+           (SELECT COUNT(*) FROM crop_disease_consultations WHERE adviser_id = u.id) as resolved_cases,
+           (SELECT COUNT(*) FROM crop_disease_consultations WHERE status = 'PENDING') as pending_cases
+    FROM users u
+    LEFT JOIN adviser_profiles ap ON u.id = ap.user_id
+    WHERE u.role = 'ADVISER'
+    ORDER BY u.created_at DESC
+  `).all());
+});
+
+router.put('/advisers/:id/verify', (req, res) => {
+  try {
+    const { is_verified } = req.body;
+    if (is_verified !== undefined) {
+      db.prepare("UPDATE users SET is_verified = ? WHERE id = ?").run(is_verified ? 1 : 0, req.params.id);
+    } else {
+      db.prepare("UPDATE users SET is_verified = 1 - is_verified WHERE id = ?").run(req.params.id);
+    }
+    const updated: any = db.prepare("SELECT is_verified FROM users WHERE id = ?").get(req.params.id);
+    res.json({ success: true, is_verified: updated ? updated.is_verified : 0 });
+  } catch (err) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.put('/advisers/:id/suspend', (req, res) => {
+  try {
+    const { status, is_active } = req.body;
+    if (status !== undefined) {
+      db.prepare("UPDATE users SET is_active = ? WHERE id = ?").run(status === 'ACTIVE' ? 1 : 0, req.params.id);
+    } else if (is_active !== undefined) {
+      db.prepare("UPDATE users SET is_active = ? WHERE id = ?").run(is_active ? 1 : 0, req.params.id);
+    } else {
+      db.prepare("UPDATE users SET is_active = 1 - is_active WHERE id = ?").run(req.params.id);
+    }
+    const updated: any = db.prepare("SELECT is_active FROM users WHERE id = ?").get(req.params.id);
+    res.json({ success: true, is_active: updated ? updated.is_active : 1 });
+  } catch (err) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 router.get('/coordinators', (req, res) => {
-  res.json(db.prepare("SELECT * FROM users WHERE role = 'COORDINATOR'").all());
+  res.json(db.prepare(`
+    SELECT u.*,
+           (SELECT COUNT(*) FROM orders WHERE coordinator_id = u.id) as assigned_orders,
+           (SELECT COUNT(*) FROM orders WHERE coordinator_id = u.id AND status = 'DELIVERED') as completed_orders
+    FROM users u
+    WHERE u.role = 'COORDINATOR'
+    ORDER BY u.created_at DESC
+  `).all());
+});
+
+router.put('/coordinators/:id/verify', (req, res) => {
+  try {
+    const { is_verified } = req.body;
+    if (is_verified !== undefined) {
+      db.prepare("UPDATE users SET is_verified = ? WHERE id = ?").run(is_verified ? 1 : 0, req.params.id);
+    } else {
+      db.prepare("UPDATE users SET is_verified = 1 - is_verified WHERE id = ?").run(req.params.id);
+    }
+    const updated: any = db.prepare("SELECT is_verified FROM users WHERE id = ?").get(req.params.id);
+    res.json({ success: true, is_verified: updated ? updated.is_verified : 0 });
+  } catch (err) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.put('/coordinators/:id/suspend', (req, res) => {
+  try {
+    const { status, is_active } = req.body;
+    if (status !== undefined) {
+      db.prepare("UPDATE users SET is_active = ? WHERE id = ?").run(status === 'ACTIVE' ? 1 : 0, req.params.id);
+    } else if (is_active !== undefined) {
+      db.prepare("UPDATE users SET is_active = ? WHERE id = ?").run(is_active ? 1 : 0, req.params.id);
+    } else {
+      db.prepare("UPDATE users SET is_active = 1 - is_active WHERE id = ?").run(req.params.id);
+    }
+    const updated: any = db.prepare("SELECT is_active FROM users WHERE id = ?").get(req.params.id);
+    res.json({ success: true, is_active: updated ? updated.is_active : 1 });
+  } catch (err) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 router.get('/orders', (req, res) => {

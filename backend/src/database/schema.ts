@@ -8,7 +8,7 @@ export function initializeDatabase() {
       username TEXT UNIQUE NOT NULL,
       mobile_number TEXT NOT NULL,
       password_hash TEXT NOT NULL,
-      role TEXT NOT NULL CHECK(role IN ('FARMER','CONSUMER','COORDINATOR','ADMIN')),
+      role TEXT NOT NULL CHECK(role IN ('FARMER','CONSUMER','COORDINATOR','ADMIN','ADVISER','LARGE_SCALE_CONSUMER')),
       email TEXT,
       address TEXT,
       village TEXT,
@@ -29,6 +29,32 @@ export function initializeDatabase() {
       account_number TEXT,
       ifsc_code TEXT,
       account_holder_name TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS adviser_profiles (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER UNIQUE REFERENCES users(id),
+      specialization TEXT,
+      qualification TEXT,
+      license_number TEXT,
+      experience_years INTEGER DEFAULT 0,
+      bio TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS crop_disease_consultations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      farmer_id INTEGER REFERENCES users(id),
+      crop_name TEXT NOT NULL,
+      image_url TEXT NOT NULL,
+      symptoms TEXT NOT NULL,
+      affected_area TEXT,
+      status TEXT DEFAULT 'PENDING' CHECK(status IN ('PENDING','ANALYZED','RESOLVED')),
+      adviser_id INTEGER REFERENCES users(id),
+      disease_name TEXT,
+      prescription TEXT,
+      adviser_notes TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      advised_at DATETIME
     );
 
     CREATE TABLE IF NOT EXISTS vegetables (
@@ -103,6 +129,9 @@ export function initializeDatabase() {
       subtotal REAL NOT NULL,
       delivery_fee REAL DEFAULT 0,
       total_amount REAL NOT NULL,
+      advance_amount REAL DEFAULT 0,
+      remaining_amount REAL DEFAULT 0,
+      order_type TEXT DEFAULT 'RETAIL',
       status TEXT DEFAULT 'PLACED' CHECK(status IN ('PLACED','CONFIRMED','ASSIGNED','PICKUP','OUT_FOR_DELIVERY','DELIVERED','CANCELLED')),
       placed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -133,4 +162,40 @@ export function initializeDatabase() {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
   `);
+
+  // Safe migrations for existing tables
+  try {
+    const userTableInfo = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='users'").get();
+    if (userTableInfo && userTableInfo.sql && !userTableInfo.sql.includes('ADVISER')) {
+      db.exec(`
+        CREATE TABLE users_migrated (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          full_name TEXT NOT NULL,
+          username TEXT UNIQUE NOT NULL,
+          mobile_number TEXT NOT NULL,
+          password_hash TEXT NOT NULL,
+          role TEXT NOT NULL CHECK(role IN ('FARMER','CONSUMER','COORDINATOR','ADMIN','ADVISER','LARGE_SCALE_CONSUMER')),
+          email TEXT,
+          address TEXT,
+          village TEXT,
+          district TEXT,
+          state TEXT,
+          pincode TEXT,
+          is_verified INTEGER DEFAULT 0,
+          is_active INTEGER DEFAULT 1,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+        INSERT INTO users_migrated (id, full_name, username, mobile_number, password_hash, role, email, address, village, district, state, pincode, is_verified, is_active, created_at)
+        SELECT id, full_name, username, mobile_number, password_hash, role, email, address, village, district, state, pincode, is_verified, is_active, created_at FROM users;
+        DROP TABLE users;
+        ALTER TABLE users_migrated RENAME TO users;
+      `);
+    }
+  } catch (migErr) {
+    console.warn('Users table migration note:', migErr);
+  }
+
+  try { db.exec(`ALTER TABLE orders ADD COLUMN advance_amount REAL DEFAULT 0;`); } catch (_) {}
+  try { db.exec(`ALTER TABLE orders ADD COLUMN remaining_amount REAL DEFAULT 0;`); } catch (_) {}
+  try { db.exec(`ALTER TABLE orders ADD COLUMN order_type TEXT DEFAULT 'RETAIL';`); } catch (_) {}
 }

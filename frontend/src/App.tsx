@@ -35,11 +35,14 @@ import RegisterSelect from './pages/public/RegisterSelect';
 import FarmerRegister from './pages/public/FarmerRegister';
 import ConsumerRegister from './pages/public/ConsumerRegister';
 import CoordinatorRegister from './pages/public/CoordinatorRegister';
+import LargeScaleRegister from './pages/public/LargeScaleRegister';
+import AdviserRegister from './pages/public/AdviserRegister';
 
 // Admin pages
 import AdminDashboard from './pages/admin/AdminDashboard';
 import PriceManagement from './pages/admin/PriceManagement';
 import FarmerManagement from './pages/admin/FarmerManagement';
+import AdviserManagement from './pages/admin/AdviserManagement';
 import ConsumerManagement from './pages/admin/ConsumerManagement';
 import CoordinatorManagement from './pages/admin/CoordinatorManagement';
 import AdminOrders from './pages/admin/AdminOrders';
@@ -52,10 +55,15 @@ import AdminSettings from './pages/admin/AdminSettings';
 import FarmerDashboard from './pages/farmer/FarmerDashboard';
 import MyProduce from './pages/farmer/MyProduce';
 import AddProduce from './pages/farmer/AddProduce';
+import CropAdvisory from './pages/farmer/CropAdvisory';
+import DiseaseDetection from './pages/farmer/DiseaseDetection';
 import FarmerOrders from './pages/farmer/FarmerOrders';
 import FarmerEarnings from './pages/farmer/FarmerEarnings';
 import FarmerProfile from './pages/farmer/FarmerProfile';
 import FarmerNotifications from './pages/farmer/FarmerNotifications';
+
+// Adviser pages
+import AdviserDashboard from './pages/adviser/AdviserDashboard';
 
 // Consumer pages
 import Marketplace from './pages/consumer/Marketplace';
@@ -77,6 +85,8 @@ import CoordCustomers from './pages/coordinator/CoordCustomers';
 import CoordReports from './pages/coordinator/CoordReports';
 import CoordNotifications from './pages/coordinator/CoordNotifications';
 
+import { TrendingUp, Stethoscope, GraduationCap, Building2 } from 'lucide-react';
+
 const ProtectedRoute = ({ allowedRoles }: { allowedRoles: string[] }) => {
   const { user, isAuthenticated, isLoading } = useAuth();
   
@@ -91,6 +101,8 @@ const ProtectedRoute = ({ allowedRoles }: { allowedRoles: string[] }) => {
     if (user.role === 'ADMIN') return <Navigate to="/admin" replace />;
     if (user.role === 'FARMER') return <Navigate to="/farmer" replace />;
     if (user.role === 'CONSUMER') return <Navigate to="/consumer" replace />;
+    if (user.role === 'LARGE_SCALE_CONSUMER') return <Navigate to="/large-scale-consumer" replace />;
+    if (user.role === 'ADVISER') return <Navigate to="/adviser" replace />;
     if (user.role === 'COORDINATOR') return <Navigate to="/coordinator" replace />;
     return <Navigate to="/" replace />;
   }
@@ -105,6 +117,7 @@ const getRoleMenuItems = (role: string, t: (k: string, fb?: string) => string) =
         { path: '/admin', label: t('menu.dashboard', 'Dashboard'), icon: <LayoutDashboard size={20} /> },
         { path: '/admin/prices', label: t('menu.vegetablePrices', 'Vegetable Prices'), icon: <IndianRupee size={20} /> },
         { path: '/admin/farmers', label: t('menu.farmers', 'Farmers'), icon: <Sprout size={20} /> },
+        { path: '/admin/advisers', label: t('menu.advisers', 'Advisers'), icon: <GraduationCap size={20} /> },
         { path: '/admin/consumers', label: t('menu.consumers', 'Consumers'), icon: <Users size={20} /> },
         { path: '/admin/coordinators', label: t('menu.coordinators', 'Coordinators'), icon: <Truck size={20} /> },
         { path: '/admin/products', label: t('menu.products', 'Products'), icon: <Package size={20} /> },
@@ -116,6 +129,8 @@ const getRoleMenuItems = (role: string, t: (k: string, fb?: string) => string) =
     case 'FARMER':
       return [
         { path: '/farmer', label: t('menu.dashboard', 'Dashboard'), icon: <LayoutDashboard size={20} /> },
+        { path: '/farmer/crop-advisory', label: t('menu.cropAdvisory', 'Crop Advisory'), icon: <TrendingUp size={20} /> },
+        { path: '/farmer/disease-detection', label: t('menu.diseaseDetection', 'Disease Detection'), icon: <Stethoscope size={20} /> },
         { path: '/farmer/produce', label: t('menu.myProduce', 'My Produce'), icon: <Package size={20} /> },
         { path: '/farmer/add-produce', label: t('menu.addProduce', 'Add Produce'), icon: <PlusCircle size={20} /> },
         { path: '/farmer/orders', label: t('menu.myOrders', 'My Orders'), icon: <ClipboardList size={20} /> },
@@ -130,6 +145,18 @@ const getRoleMenuItems = (role: string, t: (k: string, fb?: string) => string) =
         { path: '/consumer/orders', label: t('menu.myOrders', 'My Orders'), icon: <ClipboardList size={20} /> },
         { path: '/consumer/profile', label: t('menu.profile', 'Profile'), icon: <User size={20} /> },
         { path: '/consumer/notifications', label: t('menu.notifications', 'Notifications'), icon: <Bell size={20} /> },
+      ];
+    case 'LARGE_SCALE_CONSUMER':
+      return [
+        { path: '/large-scale-consumer', label: t('menu.marketplace', 'Wholesale Market'), icon: <Store size={20} /> },
+        { path: '/consumer/cart', label: t('menu.myCart', 'My Cart'), icon: <ShoppingCart size={20} /> },
+        { path: '/consumer/orders', label: t('menu.myOrders', 'My Orders'), icon: <ClipboardList size={20} /> },
+        { path: '/consumer/profile', label: t('menu.profile', 'Profile'), icon: <User size={20} /> },
+        { path: '/consumer/notifications', label: t('menu.notifications', 'Notifications'), icon: <Bell size={20} /> },
+      ];
+    case 'ADVISER':
+      return [
+        { path: '/adviser', label: t('menu.dashboard', 'Disease Cases'), icon: <Stethoscope size={20} /> },
       ];
     case 'COORDINATOR':
       return [
@@ -154,7 +181,8 @@ const DashboardLayout = ({ role }: { role: string }) => {
   const menuItems = getRoleMenuItems(role, t);
 
   const isActive = (path: string) => {
-    if (path === `/${role.toLowerCase()}`) {
+    if (location.pathname === path) return true;
+    if (path === '/consumer' || path === '/large-scale-consumer' || path === '/farmer' || path === '/admin' || path === '/coordinator' || path === '/adviser') {
       return location.pathname === path;
     }
     return location.pathname.startsWith(path);
@@ -270,6 +298,8 @@ export default function App() {
               <Route path="/register" element={<RegisterSelect />} />
               <Route path="/register/farmer" element={<FarmerRegister />} />
               <Route path="/register/consumer" element={<ConsumerRegister />} />
+              <Route path="/register/large-scale" element={<LargeScaleRegister />} />
+              <Route path="/register/adviser" element={<AdviserRegister />} />
               <Route path="/register/coordinator" element={<CoordinatorRegister />} />
               
               <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
@@ -277,6 +307,7 @@ export default function App() {
                   <Route path="/admin" element={<AdminDashboard />} />
                   <Route path="/admin/prices" element={<PriceManagement />} />
                   <Route path="/admin/farmers" element={<FarmerManagement />} />
+                  <Route path="/admin/advisers" element={<AdviserManagement />} />
                   <Route path="/admin/consumers" element={<ConsumerManagement />} />
                   <Route path="/admin/coordinators" element={<CoordinatorManagement />} />
                   <Route path="/admin/orders" element={<AdminOrders />} />
@@ -290,6 +321,8 @@ export default function App() {
               <Route element={<ProtectedRoute allowedRoles={['FARMER']} />}>
                 <Route element={<DashboardLayout role="FARMER" />}>
                   <Route path="/farmer" element={<FarmerDashboard />} />
+                  <Route path="/farmer/crop-advisory" element={<CropAdvisory />} />
+                  <Route path="/farmer/disease-detection" element={<DiseaseDetection />} />
                   <Route path="/farmer/produce" element={<MyProduce />} />
                   <Route path="/farmer/add-produce" element={<AddProduce />} />
                   <Route path="/farmer/orders" element={<FarmerOrders />} />
@@ -299,7 +332,19 @@ export default function App() {
                 </Route>
               </Route>
               
-              <Route element={<ProtectedRoute allowedRoles={['CONSUMER']} />}>
+              <Route element={<ProtectedRoute allowedRoles={['ADVISER']} />}>
+                <Route element={<DashboardLayout role="ADVISER" />}>
+                  <Route path="/adviser" element={<AdviserDashboard />} />
+                </Route>
+              </Route>
+
+              <Route element={<ProtectedRoute allowedRoles={['LARGE_SCALE_CONSUMER']} />}>
+                <Route element={<DashboardLayout role="LARGE_SCALE_CONSUMER" />}>
+                  <Route path="/large-scale-consumer" element={<Marketplace />} />
+                </Route>
+              </Route>
+
+              <Route element={<ProtectedRoute allowedRoles={['CONSUMER', 'LARGE_SCALE_CONSUMER']} />}>
                 <Route element={<DashboardLayout role="CONSUMER" />}>
                   <Route path="/consumer" element={<Marketplace />} />
                   <Route path="/consumer/product/:id" element={<ProductDetails />} />

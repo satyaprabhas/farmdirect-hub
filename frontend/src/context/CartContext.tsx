@@ -38,7 +38,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const deliveryFee = 20;
 
   const fetchCart = useCallback(async () => {
-    if (!user || user.role !== 'CONSUMER') return;
+    if (!user || (user.role !== 'CONSUMER' && user.role !== 'LARGE_SCALE_CONSUMER')) return;
     setIsLoading(true);
     try {
       const res = await api.get('/cart');

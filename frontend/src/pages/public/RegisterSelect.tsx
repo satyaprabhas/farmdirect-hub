@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Sprout, ShoppingCart, Truck } from 'lucide-react';
+import { Sprout, ShoppingCart, Truck, GraduationCap, Building2 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { LanguageToggle } from '../../components/common/LanguageToggle';
 
@@ -28,6 +28,26 @@ export default function RegisterSelect() {
       path: '/register/consumer',
       hoverColor: 'hover:border-blue-500 hover:shadow-blue-100',
       btnColor: 'bg-blue-600 hover:bg-blue-700'
+    },
+    {
+      id: 'large-scale',
+      title: t('role.largeScaleConsumer', 'Large Scale Consumer'),
+      icon: <Building2 className="w-12 h-12 mb-4 text-emerald-600" />,
+      description: t('bulk.registerSubtitle', 'Buy wholesale bulk produce directly from farmers at mandated rates.'),
+      buttonText: t('role.largeScaleConsumer', 'Register as Bulk Buyer'),
+      path: '/register/large-scale',
+      hoverColor: 'hover:border-emerald-500 hover:shadow-emerald-100',
+      btnColor: 'bg-emerald-600 hover:bg-emerald-700'
+    },
+    {
+      id: 'adviser',
+      title: t('role.adviser', 'Agricultural Adviser'),
+      icon: <GraduationCap className="w-12 h-12 mb-4 text-purple-600" />,
+      description: t('disease.subtitle', 'Provide professional plant pathology and crop health prescriptions to farmers.'),
+      buttonText: t('role.adviser', 'Register as Adviser'),
+      path: '/register/adviser',
+      hoverColor: 'hover:border-purple-500 hover:shadow-purple-100',
+      btnColor: 'bg-purple-600 hover:bg-purple-700'
     },
     {
       id: 'coordinator',
@@ -61,7 +81,7 @@ export default function RegisterSelect() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
           {roles.map((role) => (
             <div 
               key={role.id}

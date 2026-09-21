@@ -6,7 +6,9 @@ const router = express.Router();
 router.use(authenticateToken);
 
 router.post('/', (req: AuthRequest, res) => {
-  if (req.user.role !== 'CONSUMER') return res.status(403).json({ error: 'Forbidden' });
+  if (req.user.role !== 'CONSUMER' && req.user.role !== 'LARGE_SCALE_CONSUMER') {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
   
   try {
     let orderId;
@@ -20,13 +22,17 @@ router.post('/', (req: AuthRequest, res) => {
         FROM cart_items ci
         JOIN farmer_produce fp ON ci.produce_id = fp.id
         JOIN vegetables v ON fp.vegetable_id = v.id
-        WHERE ci.cart_id = ?
+        JOIN users u ON fp.farmer_id = u.id
+        WHERE ci.cart_id = ? AND u.is_verified = 1 AND u.is_active = 1
       `).all(cart.id);
       
       if (items.length === 0) throw new Error('Cart is empty');
       
       let subtotal = 0;
       for (const item of items as any[]) {
+        if (req.user.role === 'CONSUMER' && item.quantity > 5) {
+          throw new Error(`Retail consumers cannot purchase more than 5 kg per item (${item.vegetable_name})`);
+        }
         if (item.available_quantity < item.quantity) {
           throw new Error(`Only ${item.available_quantity} available for ${item.vegetable_name}`);
         }
@@ -42,8 +48,30 @@ router.post('/', (req: AuthRequest, res) => {
       
       const reqBody = req.body || {};
       const isHubPickup = reqBody.delivery_type === 'HUB_PICKUP';
+
+      // Validation based on role and delivery method
+      if (req.user.role === 'LARGE_SCALE_CONSUMER') {
+        if (!isHubPickup) {
+          throw new Error('Large Scale Consumers can only select Hub Pickup');
+        }
+        if (subtotal < 500) {
+          throw new Error('Minimum order amount for Large Scale Consumers is ₹500');
+        }
+      } else {
+        // Retail consumer
+        if (isHubPickup && subtotal < 100) {
+          throw new Error('Minimum order amount for Hub Pickup is ₹100');
+        }
+        if (!isHubPickup && subtotal < 300) {
+          throw new Error('Minimum order amount for Home Delivery is ₹300');
+        }
+      }
+      
       const delivery_fee = isHubPickup ? 0 : 20;
       const total_amount = subtotal + delivery_fee;
+      const advance_amount = Math.round((total_amount * 0.25) * 100) / 100;
+      const remaining_amount = Math.round((total_amount - advance_amount) * 100) / 100;
+      const order_type = req.user.role === 'LARGE_SCALE_CONSUMER' ? 'BULK' : 'RETAIL';
       
       let final_address = reqBody.delivery_address || '';
       let final_village = reqBody.delivery_village || '';
@@ -62,12 +90,12 @@ router.post('/', (req: AuthRequest, res) => {
         final_pincode = consumer?.pincode || '';
       }
       
-      const coord: any = db.prepare("SELECT id FROM users WHERE role = 'COORDINATOR' LIMIT 1").get();
+      const coord: any = db.prepare("SELECT id FROM users WHERE role = 'COORDINATOR' AND is_verified = 1 AND is_active = 1 LIMIT 1").get();
       
       const orderInfo = db.prepare(`
-        INSERT INTO orders (order_number, consumer_id, coordinator_id, delivery_address, delivery_village, delivery_district, delivery_state, delivery_pincode, subtotal, delivery_fee, total_amount)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(order_number, req.user.id, coord ? coord.id : null, final_address, final_village, final_district, final_state, final_pincode, subtotal, delivery_fee, total_amount);
+        INSERT INTO orders (order_number, consumer_id, coordinator_id, delivery_address, delivery_village, delivery_district, delivery_state, delivery_pincode, subtotal, delivery_fee, total_amount, advance_amount, remaining_amount, order_type)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(order_number, req.user.id, coord ? coord.id : null, final_address, final_village, final_district, final_state, final_pincode, subtotal, delivery_fee, total_amount, advance_amount, remaining_amount, order_type);
       orderId = orderInfo.lastInsertRowid;
       
       for (const item of items as any[]) {
@@ -81,9 +109,9 @@ router.post('/', (req: AuthRequest, res) => {
       
       db.prepare("DELETE FROM cart_items WHERE cart_id = ?").run(cart.id);
       
-      db.prepare("INSERT INTO notifications (user_id, title, message) VALUES (?, ?, ?)").run(req.user.id, 'Order Placed Successfully', `Your order ${order_number} has been placed`);
+      db.prepare("INSERT INTO notifications (user_id, title, message) VALUES (?, ?, ?)").run(req.user.id, 'Order Placed Successfully', `Your order ${order_number} has been placed. Advance: ₹${advance_amount}, Remaining: ₹${remaining_amount}`);
       if (coord) {
-        db.prepare("INSERT INTO notifications (user_id, title, message) VALUES (?, ?, ?)").run(coord.id, 'New Order Assigned', `Order ${order_number} needs coordination`);
+        db.prepare("INSERT INTO notifications (user_id, title, message) VALUES (?, ?, ?)").run(coord.id, 'New Order Assigned', `Order ${order_number} (${order_type}) needs coordination`);
       }
       
     })();
@@ -98,7 +126,7 @@ router.post('/', (req: AuthRequest, res) => {
 router.get('/', (req: AuthRequest, res) => {
   try {
     let orders: any[] = [];
-    if (req.user.role === 'CONSUMER') {
+    if (req.user.role === 'CONSUMER' || req.user.role === 'LARGE_SCALE_CONSUMER') {
       orders = db.prepare("SELECT * FROM orders WHERE consumer_id = ? ORDER BY placed_at DESC").all(req.user.id);
     } else if (req.user.role === 'COORDINATOR') {
       orders = db.prepare("SELECT * FROM orders WHERE coordinator_id = ? ORDER BY placed_at DESC").all(req.user.id);

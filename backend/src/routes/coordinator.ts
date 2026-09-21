@@ -73,6 +73,18 @@ router.get('/orders/:id', (req: AuthRequest, res) => {
 router.put('/orders/:id/status', (req: AuthRequest, res) => {
   const { status } = req.body;
   try {
+    const coordUser: any = db.prepare("SELECT is_verified, is_active FROM users WHERE id = ?").get(req.user.id);
+    if (!coordUser || coordUser.is_verified !== 1) {
+      return res.status(403).json({
+        error: 'Your coordinator account is pending verification and approval by Admin. You cannot manage or update orders until approved.'
+      });
+    }
+    if (coordUser.is_active !== 1) {
+      return res.status(403).json({
+        error: 'Your coordinator account has been suspended by Admin.'
+      });
+    }
+
     db.transaction(() => {
       const order: any = db.prepare("SELECT * FROM orders WHERE id = ? AND coordinator_id = ?").get(req.params.id, req.user.id);
       if (!order) throw new Error('Order not found');

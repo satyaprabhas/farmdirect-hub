@@ -66,8 +66,9 @@ export function getImageUrl(path: string | any): string {
   if (!path) return '';
   const urlPath = typeof path === 'object' ? (path.image_url || path.url || '') : String(path);
   if (!urlPath) return '';
-  if (urlPath.startsWith('http') || urlPath.startsWith('blob:')) return urlPath;
-  return `${UPLOADS_BASE_URL}/${urlPath}`;
+  if (urlPath.startsWith('http') || urlPath.startsWith('blob:') || urlPath.startsWith('data:')) return urlPath;
+  const cleanPath = urlPath.replace(/^\/?uploads\//, '');
+  return `${UPLOADS_BASE_URL}/${cleanPath}`;
 }
 
 export default api;

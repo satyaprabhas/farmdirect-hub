@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Sprout, Package, ClipboardList, CheckCircle, IndianRupee, Plus } from 'lucide-react';
+import { Sprout, Package, ClipboardList, CheckCircle, IndianRupee, Plus, AlertTriangle } from 'lucide-react';
 import api from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
 import { useLanguage } from '../../context/LanguageContext';
 import DashboardCard from '../../components/common/DashboardCard';
 import StatusBadge from '../../components/common/StatusBadge';
@@ -20,14 +21,18 @@ interface DashboardData {
 }
 
 const FarmerDashboard: React.FC = () => {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const { t, translateVeg, language } = useLanguage();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  const isVerified = user?.is_verified === 1;
+
   useEffect(() => {
+    refreshUser?.();
     const fetchDashboard = async () => {
       try {
         setLoading(true);
@@ -42,6 +47,19 @@ const FarmerDashboard: React.FC = () => {
     };
     fetchDashboard();
   }, []);
+
+  const handleAddProduceClick = () => {
+    if (!isVerified) {
+      showToast(
+        language === 'te'
+          ? 'మీ రైతు ఖాతా అడ్మిన్ ద్వారా ఆమోదించబడలేదు. అడ్మిన్ ఆమోదించిన తర్వాత మాత్రమే ఉత్పత్తులను విక్రయించగలరు.'
+          : 'Your farmer account is pending approval by the Admin. You cannot sell or list produce until approved.',
+        'error'
+      );
+      return;
+    }
+    navigate('/farmer/add-produce');
+  };
 
   if (loading) return <LoadingSpinner size="lg" />;
   if (error) return <div className="text-red-500 p-4">{error}</div>;
@@ -59,13 +77,38 @@ const FarmerDashboard: React.FC = () => {
           </p>
         </div>
         <button
-          onClick={() => navigate('/farmer/add-produce')}
-          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors shadow-sm"
+          onClick={handleAddProduceClick}
+          className={`${
+            isVerified ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-gray-300 text-gray-600 cursor-not-allowed'
+          } px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors shadow-sm`}
+          title={!isVerified ? 'Account pending Admin approval' : undefined}
         >
           <Plus size={20} />
           {t('farmer.addNewProduce', 'Add New Produce')}
         </button>
       </div>
+
+      {/* Admin Approval Notice Banner for Unverified Farmers */}
+      {!isVerified && (
+        <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-2xl flex items-start gap-3 shadow-sm">
+          <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-bold text-amber-900">
+                {language === 'te' ? 'అడ్మిన్ ఆమోదం కోసం వేచి ఉంది (ధృవీకరించబడలేదు)' : 'Account Pending Admin Approval (Unverified)'}
+              </h3>
+              <span className="bg-amber-200/80 text-amber-900 text-[11px] font-bold px-2 py-0.5 rounded-full">
+                {language === 'te' ? 'అమ్మకాలు నిలిపివేయబడ్డాయి' : 'Selling Restricted'}
+              </span>
+            </div>
+            <p className="text-xs sm:text-sm text-amber-800 mt-1">
+              {language === 'te'
+                ? 'మీ రైతు ఖాతా ఇంకా అడ్మిన్ ద్వారా ఆమోదించబడలేదు. అడ్మిన్ పోర్టల్‌లో ఆమోదం పొందిన తర్వాత మాత్రమే మీరు ఉత్పత్తులను విక్రయించడానికి నమోదు చేయగలరు.'
+                : 'Your farmer account has not been approved by the Admin yet. You will be permitted to list and sell fresh produce once the Admin verifies your account in the Admin Portal.'}
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <DashboardCard 
@@ -93,6 +136,49 @@ const FarmerDashboard: React.FC = () => {
           value={`₹${data.totalEarnings || 0}`} 
           icon={<IndianRupee size={24} className="text-yellow-500" />} 
         />
+      </div>
+
+      {/* New Advisory & Disease Detection Feature Banners */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div 
+          onClick={() => navigate('/farmer/crop-advisory')}
+          className="bg-gradient-to-r from-emerald-500 to-green-600 rounded-xl p-5 text-white shadow-sm hover:shadow-md transition-all cursor-pointer flex items-center justify-between group"
+        >
+          <div className="space-y-1">
+            <span className="text-xs font-semibold uppercase tracking-wider text-emerald-100 bg-white/20 px-2 py-0.5 rounded">
+              {language === 'te' ? 'లాభదాయక సాగు సలహాలు' : 'Profit Optimization'}
+            </span>
+            <h3 className="text-lg font-bold group-hover:underline">
+              {t('advisory.title', 'Crop Cultivation Advisory')}
+            </h3>
+            <p className="text-xs text-emerald-100 max-w-sm">
+              {t('advisory.subtitle', 'See which crops yield highest profits based on market trends and demand statistics.')}
+            </p>
+          </div>
+          <div className="bg-white/20 p-3 rounded-full group-hover:scale-110 transition-transform">
+            <Sprout className="w-6 h-6 text-white" />
+          </div>
+        </div>
+
+        <div 
+          onClick={() => navigate('/farmer/disease-detection')}
+          className="bg-gradient-to-r from-rose-500 to-amber-600 rounded-xl p-5 text-white shadow-sm hover:shadow-md transition-all cursor-pointer flex items-center justify-between group"
+        >
+          <div className="space-y-1">
+            <span className="text-xs font-semibold uppercase tracking-wider text-rose-100 bg-white/20 px-2 py-0.5 rounded">
+              {language === 'te' ? 'తెగుళ్ల నివారణ & సలహాదారు' : 'Adviser Consultation'}
+            </span>
+            <h3 className="text-lg font-bold group-hover:underline">
+              {t('disease.title', 'Crop Disease Detection')}
+            </h3>
+            <p className="text-xs text-rose-100 max-w-sm">
+              {t('disease.subtitle', 'Upload photo of diseased crop and receive prescription from certified agricultural advisers.')}
+            </p>
+          </div>
+          <div className="bg-white/20 p-3 rounded-full group-hover:scale-110 transition-transform">
+            <ClipboardList className="w-6 h-6 text-white" />
+          </div>
+        </div>
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">

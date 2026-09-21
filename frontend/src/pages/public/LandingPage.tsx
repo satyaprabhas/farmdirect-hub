@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { 
   Sprout, 
@@ -10,14 +10,16 @@ import {
   Eye, 
   EyeOff, 
   Info, 
-  Loader2 
+  Loader2,
+  GraduationCap,
+  Building2
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { LanguageToggle } from '../../components/common/LanguageToggle';
 
-type Role = 'CONSUMER' | 'FARMER' | 'COORDINATOR' | 'ADMIN';
+type Role = 'CONSUMER' | 'FARMER' | 'COORDINATOR' | 'ADMIN' | 'ADVISER' | 'LARGE_SCALE_CONSUMER';
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -58,6 +60,12 @@ export default function LandingPage() {
         case 'ADMIN':
           navigate('/admin');
           break;
+        case 'ADVISER':
+          navigate('/adviser');
+          break;
+        case 'LARGE_SCALE_CONSUMER':
+          navigate('/large-scale-consumer');
+          break;
         default:
           navigate('/');
       }
@@ -73,10 +81,12 @@ export default function LandingPage() {
   };
 
   const roles: { id: Role; labelKey: string; defaultName: string; icon: React.ReactNode }[] = [
-    { id: 'CONSUMER', labelKey: 'role.consumer', defaultName: 'Consumer', icon: <ShoppingCart className="w-6 h-6" /> },
-    { id: 'FARMER', labelKey: 'role.farmer', defaultName: 'Farmer', icon: <Sprout className="w-6 h-6" /> },
-    { id: 'COORDINATOR', labelKey: 'role.coordinator', defaultName: 'Coordinator', icon: <Truck className="w-6 h-6" /> },
-    { id: 'ADMIN', labelKey: 'role.admin', defaultName: 'Admin', icon: <Shield className="w-6 h-6" /> },
+    { id: 'CONSUMER', labelKey: 'role.consumer', defaultName: 'Consumer', icon: <ShoppingCart className="w-5 h-5" /> },
+    { id: 'FARMER', labelKey: 'role.farmer', defaultName: 'Farmer', icon: <Sprout className="w-5 h-5" /> },
+    { id: 'LARGE_SCALE_CONSUMER', labelKey: 'role.largeScaleConsumer', defaultName: 'Bulk Buyer', icon: <Building2 className="w-5 h-5" /> },
+    { id: 'ADVISER', labelKey: 'role.adviser', defaultName: 'Adviser', icon: <GraduationCap className="w-5 h-5" /> },
+    { id: 'COORDINATOR', labelKey: 'role.coordinator', defaultName: 'Coordinator', icon: <Truck className="w-5 h-5" /> },
+    { id: 'ADMIN', labelKey: 'role.admin', defaultName: 'Admin', icon: <Shield className="w-5 h-5" /> },
   ];
 
   return (
@@ -186,7 +196,7 @@ export default function LandingPage() {
               <label className="block text-sm font-medium text-gray-700 mb-3">
                 {t('auth.selectRole', 'Login As')}
               </label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                 {roles.map((role) => {
                   const isSelected = selectedRole === role.id;
                   return (
@@ -330,10 +340,12 @@ export default function LandingPage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {[
-                { role: 'FARMER' as Role, user: 'farmer1', pass: '123456', labelKey: 'role.farmer', defaultLabel: 'Farmer' },
-                { role: 'CONSUMER' as Role, user: 'consumer1', pass: '123456', labelKey: 'role.consumer', defaultLabel: 'Consumer' },
-                { role: 'COORDINATOR' as Role, user: 'coordinator1', pass: '123456', labelKey: 'role.coordinator', defaultLabel: 'Coordinator' },
-                { role: 'ADMIN' as Role, user: 'admin', pass: '123456', labelKey: 'role.admin', defaultLabel: 'Admin' },
+                { role: 'FARMER' as Role, user: 'farmer1', pass: 'password123', labelKey: 'role.farmer', defaultLabel: 'Farmer' },
+                { role: 'CONSUMER' as Role, user: 'consumer1', pass: 'password123', labelKey: 'role.consumer', defaultLabel: 'Consumer' },
+                { role: 'LARGE_SCALE_CONSUMER' as Role, user: 'bulkbuyer1', pass: 'password123', labelKey: 'role.largeScaleConsumer', defaultLabel: 'Bulk Buyer' },
+                { role: 'ADVISER' as Role, user: 'adviser1', pass: 'password123', labelKey: 'role.adviser', defaultLabel: 'Adviser' },
+                { role: 'COORDINATOR' as Role, user: 'coordinator1', pass: 'password123', labelKey: 'role.coordinator', defaultLabel: 'Coordinator' },
+                { role: 'ADMIN' as Role, user: 'admin', pass: 'password123', labelKey: 'role.admin', defaultLabel: 'Admin' },
               ].map((demo, idx) => (
                 <button
                   key={idx}

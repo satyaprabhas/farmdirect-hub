@@ -13,7 +13,7 @@ router.get('/', (req, res) => {
       FROM farmer_produce fp
       JOIN vegetables v ON fp.vegetable_id = v.id
       JOIN users u ON fp.farmer_id = u.id
-      WHERE fp.status = 'ACTIVE' AND fp.available_quantity > 0
+      WHERE fp.status = 'ACTIVE' AND fp.available_quantity > 0 AND u.is_verified = 1 AND u.is_active = 1
     `;
     const params = [];
     
@@ -32,9 +32,6 @@ router.get('/', (req, res) => {
     if (location) {
       query += ` AND (fp.village LIKE ? OR fp.district LIKE ? OR fp.state LIKE ?)`;
       params.push(`%${location}%`, `%${location}%`, `%${location}%`);
-    }
-    if (verified === 'true') {
-      query += ` AND u.is_verified = 1`;
     }
     
     if (sort === 'price_asc') query += ` ORDER BY v.current_price ASC`;
@@ -70,7 +67,7 @@ router.get('/:id', (req, res) => {
       FROM farmer_produce fp
       JOIN vegetables v ON fp.vegetable_id = v.id
       JOIN users u ON fp.farmer_id = u.id
-      WHERE fp.id = ?
+      WHERE fp.id = ? AND u.is_verified = 1 AND u.is_active = 1
     `).get(req.params.id);
     
     if (!p) return res.status(404).json({ error: 'Produce not found' });

@@ -71,6 +71,18 @@ router.get('/produce', (req: AuthRequest, res) => {
 router.post('/produce', (req: AuthRequest, res) => {
   const { vegetable_id, available_quantity, unit, farm_name, farm_location, village, district, state, pincode } = req.body;
   try {
+    const farmerUser: any = db.prepare("SELECT is_verified, is_active FROM users WHERE id = ?").get(req.user.id);
+    if (!farmerUser || farmerUser.is_verified !== 1) {
+      return res.status(403).json({
+        error: 'Your farmer account is pending verification and approval by Admin. You cannot sell or list produce until approved.'
+      });
+    }
+    if (farmerUser.is_active !== 1) {
+      return res.status(403).json({
+        error: 'Your farmer account has been suspended by Admin.'
+      });
+    }
+
     const veg: any = db.prepare("SELECT id FROM vegetables WHERE id = ? AND is_active = 1").get(vegetable_id);
     if (!veg) return res.status(400).json({ error: 'Invalid vegetable' });
     
@@ -99,6 +111,18 @@ router.post('/produce', (req: AuthRequest, res) => {
 router.put('/produce/:id', (req: AuthRequest, res) => {
   const { available_quantity, farm_location, status } = req.body;
   try {
+    const farmerUser: any = db.prepare("SELECT is_verified, is_active FROM users WHERE id = ?").get(req.user.id);
+    if (!farmerUser || farmerUser.is_verified !== 1) {
+      return res.status(403).json({
+        error: 'Your farmer account is pending verification and approval by Admin. You cannot update produce until approved.'
+      });
+    }
+    if (farmerUser.is_active !== 1) {
+      return res.status(403).json({
+        error: 'Your farmer account has been suspended by Admin.'
+      });
+    }
+
     const info = db.prepare(`
       UPDATE farmer_produce 
       SET available_quantity = COALESCE(?, available_quantity), farm_location = COALESCE(?, farm_location), status = COALESCE(?, status), updated_at = CURRENT_TIMESTAMP
@@ -124,6 +148,18 @@ router.delete('/produce/:id', (req: AuthRequest, res) => {
 
 router.post('/produce/:id/images', upload.array('images', 5), (req: AuthRequest, res) => {
   try {
+    const farmerUser: any = db.prepare("SELECT is_verified, is_active FROM users WHERE id = ?").get(req.user.id);
+    if (!farmerUser || farmerUser.is_verified !== 1) {
+      return res.status(403).json({
+        error: 'Your farmer account is pending verification and approval by Admin. You cannot upload produce images until approved.'
+      });
+    }
+    if (farmerUser.is_active !== 1) {
+      return res.status(403).json({
+        error: 'Your farmer account has been suspended by Admin.'
+      });
+    }
+
     const p: any = db.prepare("SELECT id FROM farmer_produce WHERE id = ? AND farmer_id = ?").get(req.params.id, req.user.id);
     if (!p) return res.status(404).json({ error: 'Produce not found or unauthorized' });
     
@@ -173,6 +209,199 @@ router.get('/earnings', (req: AuthRequest, res) => {
     `).all(req.user.id);
     res.json(earnings);
   } catch (err) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// 1. Crop Recommendation & Advisory based on Statistics
+router.get('/crop-advisory', (req: AuthRequest, res) => {
+  try {
+    const vegetables = db.prepare("SELECT * FROM vegetables WHERE is_active = 1").all();
+
+    // Agronomic metadata lookup for statistical advice
+    const agronomicData: Record<string, { seasons: string[]; duration: string; yieldPerAcre: number; costPerAcre: number; waterReq: string; risk: string }> = {
+      'Tomatoes': { seasons: ['Kharif', 'Rabi', 'All-Year'], duration: '90-110 days', yieldPerAcre: 12000, costPerAcre: 45000, waterReq: 'Moderate', risk: 'Low' },
+      'Drumstick': { seasons: ['All-Year', 'Perennial'], duration: '180 days (Perennial)', yieldPerAcre: 8500, costPerAcre: 35000, waterReq: 'Low (Drought Tolerant)', risk: 'Very Low' },
+      'Ridge Gourd': { seasons: ['Summer', 'Kharif'], duration: '60-70 days', yieldPerAcre: 6000, costPerAcre: 28000, waterReq: 'Moderate', risk: 'Low' },
+      'Bitter Gourd': { seasons: ['Summer', 'Kharif'], duration: '65-75 days', yieldPerAcre: 5500, costPerAcre: 30000, waterReq: 'Moderate', risk: 'Low' },
+      'Beans': { seasons: ['Rabi', 'Winter'], duration: '70-85 days', yieldPerAcre: 5000, costPerAcre: 32000, waterReq: 'Low to Moderate', risk: 'Low' },
+      'Ladies Finger': { seasons: ['Summer', 'Kharif'], duration: '50-60 days', yieldPerAcre: 6500, costPerAcre: 26000, waterReq: 'Low to Moderate', risk: 'Low' },
+      'Brinjal': { seasons: ['All-Year'], duration: '100-120 days', yieldPerAcre: 10000, costPerAcre: 38000, waterReq: 'Moderate', risk: 'Medium' },
+      'Cauliflower': { seasons: ['Rabi', 'Winter'], duration: '80-100 days', yieldPerAcre: 8000, costPerAcre: 34000, waterReq: 'Moderate', risk: 'Medium' },
+      'Tindora': { seasons: ['All-Year', 'Summer'], duration: '75-90 days', yieldPerAcre: 7000, costPerAcre: 32000, waterReq: 'Moderate', risk: 'Low' },
+      'Carrots': { seasons: ['Rabi', 'Winter'], duration: '85-100 days', yieldPerAcre: 9000, costPerAcre: 30000, waterReq: 'Moderate', risk: 'Low' },
+      'Cucumbers': { seasons: ['Summer', 'Zaid'], duration: '45-55 days', yieldPerAcre: 7500, costPerAcre: 24000, waterReq: 'Moderate', risk: 'Low' },
+      'Bottle Gourd': { seasons: ['Summer', 'Kharif'], duration: '60-70 days', yieldPerAcre: 11000, costPerAcre: 25000, waterReq: 'Moderate', risk: 'Very Low' },
+      'Spinach': { seasons: ['All-Year', 'Winter'], duration: '30-40 days', yieldPerAcre: 4500, costPerAcre: 15000, waterReq: 'High', risk: 'Very Low' },
+      'Potatoes': { seasons: ['Rabi', 'Winter'], duration: '90-110 days', yieldPerAcre: 10000, costPerAcre: 40000, waterReq: 'Moderate', risk: 'Low' },
+      'Onions': { seasons: ['Kharif', 'Rabi'], duration: '120-140 days', yieldPerAcre: 9500, costPerAcre: 42000, waterReq: 'Low to Moderate', risk: 'Low' },
+    };
+
+    const recommendations = (vegetables as any[]).map(veg => {
+      // 1. Total order volume from marketplace stats
+      const salesStats: any = db.prepare(`
+        SELECT COUNT(*) as order_count, COALESCE(SUM(quantity), 0) as total_sold
+        FROM order_items WHERE vegetable_id = ?
+      `).get(veg.id);
+
+      // 2. Current active stock in market
+      const stockStats: any = db.prepare(`
+        SELECT COALESCE(SUM(available_quantity), 0) as total_stock, COUNT(*) as active_farmers
+        FROM farmer_produce WHERE vegetable_id = ? AND status = 'ACTIVE'
+      `).get(veg.id);
+
+      const agro = agronomicData[veg.name] || {
+        seasons: ['All-Year'],
+        duration: '70-90 days',
+        yieldPerAcre: 7000,
+        costPerAcre: 30000,
+        waterReq: 'Moderate',
+        risk: 'Low'
+      };
+
+      const mandatedPrice = veg.current_price;
+      const farmerPricePerKg = Number((mandatedPrice * 0.85).toFixed(2));
+      const estGrossRevenuePerAcre = farmerPricePerKg * agro.yieldPerAcre;
+      const estNetProfitPerAcre = Math.max(0, estGrossRevenuePerAcre - agro.costPerAcre);
+      const profitMarginPercent = Math.round((estNetProfitPerAcre / estGrossRevenuePerAcre) * 100);
+
+      // Demand score calculation
+      let demandRating = 'HIGH';
+      let benefitScore = 80;
+
+      if (mandatedPrice >= 50 || (salesStats.total_sold > stockStats.total_stock)) {
+        demandRating = 'VERY HIGH';
+        benefitScore = 95;
+      } else if (stockStats.total_stock < 50) {
+        demandRating = 'HIGH (Supply Shortage)';
+        benefitScore = 90;
+      } else if (mandatedPrice < 25 && stockStats.total_stock > 100) {
+        demandRating = 'MODERATE';
+        benefitScore = 70;
+      }
+
+      // Harvest duration days
+      const daysMatch = (agro.duration || '').match(/(\d+)/);
+      const harvestDays = daysMatch ? parseInt(daysMatch[1]) : 75;
+
+      return {
+        id: veg.id,
+        name: veg.name,
+        vegetable_name: veg.name,
+        current_price: mandatedPrice,
+        mandated_price: mandatedPrice,
+        farmer_earning_rate: farmerPricePerKg,
+        farmer_price: farmerPricePerKg,
+        unit: veg.unit,
+        demand_rating: demandRating,
+        demand_level: demandRating.includes('HIGH') ? 'HIGH' : (demandRating.includes('MODERATE') ? 'MODERATE' : 'NORMAL'),
+        demand_score: benefitScore,
+        benefit_score: benefitScore,
+        est_net_profit_per_acre: estNetProfitPerAcre,
+        est_profit_acre: estNetProfitPerAcre,
+        profit_margin_percent: profitMarginPercent,
+        margin_percent: profitMarginPercent,
+        yield_per_acre: agro.yieldPerAcre,
+        avg_yield_acre: agro.yieldPerAcre,
+        growing_duration: agro.duration,
+        harvest_days: harvestDays,
+        recommended_seasons: agro.seasons,
+        best_season: agro.seasons.join(', '),
+        water_requirement: agro.waterReq,
+        risk_level: agro.risk,
+        current_active_farmers: stockStats.active_farmers || 0,
+        total_stock_available: stockStats.total_stock || 0,
+        recommendation: `Recommended for ${agro.seasons.join(' & ')} season. High market demand yielding ₹${estNetProfitPerAcre.toLocaleString('en-IN')} est. net profit/acre with ${profitMarginPercent}% margin.`,
+        stat_note: `${salesStats.order_count || 0} direct consumer orders (${salesStats.total_sold || 0} kg traded)`,
+        market_stats: {
+          total_orders: salesStats.order_count || 0,
+          total_kg_sold: salesStats.total_sold || 0,
+          current_active_stock_kg: stockStats.total_stock || 0,
+          active_farmers_competing: stockStats.active_farmers || 0
+        }
+      };
+    });
+
+    recommendations.sort((a, b) => b.benefit_score - a.benefit_score || b.est_net_profit_per_acre - a.est_net_profit_per_acre);
+    res.json({ success: true, advisory: recommendations, count: recommendations.length });
+  } catch (err) {
+    console.error('Crop advisory error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// 2. Crop Disease Detection & Consultation - Get Farmer's Cases
+router.get('/consultations', (req: AuthRequest, res) => {
+  try {
+    const consultations = db.prepare(`
+      SELECT c.*, 
+             u.full_name as adviser_name, u.mobile_number as adviser_mobile,
+             ap.specialization as adviser_specialization, ap.qualification as adviser_qualification
+      FROM crop_disease_consultations c
+      LEFT JOIN users u ON c.adviser_id = u.id
+      LEFT JOIN adviser_profiles ap ON u.id = ap.user_id
+      WHERE c.farmer_id = ?
+      ORDER BY c.created_at DESC
+    `).all(req.user.id);
+
+    res.json(consultations);
+  } catch (err) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// 3. Crop Disease Detection - Submit New Case with Photo
+router.post('/consultations', upload.single('crop_image'), (req: AuthRequest, res) => {
+  try {
+    const { crop_name, symptoms, affected_area } = req.body;
+    if (!crop_name || !symptoms) {
+      return res.status(400).json({ error: 'Crop name and symptoms description are required' });
+    }
+
+    const image_url = req.file ? `/uploads/${req.file.filename}` : (req.body.image_url || '/uploads/1789361063839.jpeg');
+
+    // Rule-based diagnostic screening
+    let preliminaryDiagnosis = 'Analyzing with Agricultural Experts';
+    const lowerSymptoms = symptoms.toLowerCase();
+    if (lowerSymptoms.includes('spot') || lowerSymptoms.includes('blight') || lowerSymptoms.includes('ring')) {
+      preliminaryDiagnosis = 'Likely Early/Late Blight or Fungal Leaf Spot';
+    } else if (lowerSymptoms.includes('yellow') || lowerSymptoms.includes('curl')) {
+      preliminaryDiagnosis = 'Likely Leaf Curl Virus or Nutrient Deficiency';
+    } else if (lowerSymptoms.includes('rot') || lowerSymptoms.includes('wet')) {
+      preliminaryDiagnosis = 'Likely Bacterial Soft Rot or Damping Off';
+    } else if (lowerSymptoms.includes('hole') || lowerSymptoms.includes('pest') || lowerSymptoms.includes('worm')) {
+      preliminaryDiagnosis = 'Likely Fruit Borer or Caterpillar Pest Infestation';
+    }
+
+    const info = db.prepare(`
+      INSERT INTO crop_disease_consultations (farmer_id, crop_name, image_url, symptoms, affected_area, status, disease_name)
+      VALUES (?, ?, ?, ?, ?, 'PENDING', ?)
+    `).run(
+      req.user.id,
+      crop_name,
+      image_url,
+      symptoms,
+      affected_area || 'Not specified',
+      preliminaryDiagnosis
+    );
+
+    // Notify all active advisers
+    const advisers = db.prepare("SELECT id FROM users WHERE role = 'ADVISER'").all();
+    advisers.forEach((adv: any) => {
+      db.prepare(`
+        INSERT INTO notifications (user_id, title, message)
+        VALUES (?, 'New Crop Disease Case Submitted', ?)
+      `).run(adv.id, `Farmer submitted a disease case for ${crop_name}. Please review and advise.`);
+    });
+
+    res.status(201).json({
+      success: true,
+      id: info.lastInsertRowid,
+      preliminary_diagnosis: preliminaryDiagnosis,
+      message: 'Disease case submitted successfully to Agricultural Advisers.'
+    });
+  } catch (err) {
+    console.error('Submit consultation error:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

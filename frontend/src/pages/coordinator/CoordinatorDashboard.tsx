@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingBag, CheckCircle, Clock, Users, Truck } from 'lucide-react';
+import { ShoppingBag, CheckCircle, Clock, Users, Truck, AlertTriangle } from 'lucide-react';
 import api from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import DashboardCard from '../../components/common/DashboardCard';
@@ -16,12 +16,15 @@ interface DashboardData {
 }
 
 const CoordinatorDashboard: React.FC = () => {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [stats, setStats] = useState<DashboardData | null>(null);
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const isVerified = user?.is_verified === 1;
+
   useEffect(() => {
+    refreshUser?.();
     const fetchDashboard = async () => {
       try {
         const [dashRes, ordersRes] = await Promise.all([
@@ -49,6 +52,26 @@ const CoordinatorDashboard: React.FC = () => {
         <h1 className="text-2xl font-bold text-gray-900">Coordinator Dashboard</h1>
         <p className="text-gray-500">Welcome back, {user?.full_name}! Here's what's happening today.</p>
       </div>
+
+      {/* Admin Approval Notice Banner for Unverified Coordinators */}
+      {!isVerified && (
+        <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-2xl flex items-start gap-3 shadow-sm">
+          <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-bold text-amber-900">
+                Account Pending Admin Approval (Unverified)
+              </h3>
+              <span className="bg-amber-200/80 text-amber-900 text-[11px] font-bold px-2 py-0.5 rounded-full">
+                Coordination Restricted
+              </span>
+            </div>
+            <p className="text-xs sm:text-sm text-amber-800 mt-1">
+              Your coordinator account is pending verification and approval by the Admin. You cannot update order statuses or manage logistics operations until your account is approved in the Admin Portal.
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <DashboardCard

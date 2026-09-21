@@ -1,6 +1,6 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, MapPin, Package, ShoppingCart, CheckCircle, Filter } from 'lucide-react';
+import { Search, MapPin, Package, ShoppingCart, CheckCircle, Filter, Building2, CreditCard, Info } from 'lucide-react';
 import api, { getImageUrl } from '../../api/client';
 import { useCart } from '../../context/CartContext';
 import { useToast } from '../../context/ToastContext';
@@ -9,6 +9,8 @@ import LoadingSpinner from '../../components/common/LoadingSpinner';
 import EmptyState from '../../components/common/EmptyState';
 import QuantitySelector from '../../components/common/QuantitySelector';
 import PriceDisplay from '../../components/common/PriceDisplay';
+
+import { useAuth } from '../../context/AuthContext';
 
 interface Product {
   id: number;
@@ -26,6 +28,9 @@ interface Product {
 }
 
 export default function Marketplace() {
+  const { user } = useAuth();
+  const isBulkBuyer = user?.role === 'LARGE_SCALE_CONSUMER';
+
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -147,7 +152,81 @@ export default function Marketplace() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 relative z-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 relative z-10 space-y-6">
+        {/* Order Policy & Deposit Banner */}
+        {isBulkBuyer ? (
+          <div className="bg-emerald-50 border-2 border-emerald-400/80 rounded-2xl p-4 sm:p-5 shadow-sm text-emerald-950">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-emerald-200/80 pb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
+                  <Building2 className="w-5 h-5 text-emerald-800" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-bold text-emerald-950 text-base">
+                      {language === 'te' ? 'హోల్‌సేల్ / బల్క్ కొనుగోలు నిబంధనలు' : 'Wholesale Bulk Order Policy'}
+                    </h3>
+                    <span className="font-bold text-emerald-900 uppercase tracking-wide text-[10px] bg-emerald-200 px-2 py-0.5 rounded-md">
+                      {t('bulk.badge', 'Wholesale Bulk Buyer')}
+                    </span>
+                  </div>
+                  <p className="text-emerald-800 text-xs mt-0.5 font-medium">
+                    {t('bulk.minNotice', 'Minimum order ₹500. Bulk orders must be collected directly from the FarmDirect Hub.')}
+                  </p>
+                </div>
+              </div>
+              <span className="inline-flex items-center px-3 py-1 bg-emerald-200/80 text-emerald-900 rounded-full text-xs font-bold shrink-0 self-start sm:self-auto">
+                {language === 'te' ? 'కనీస ఆర్డర్: ₹500 (హబ్ పికప్)' : 'Min. Order: ₹500 (Hub Pickup)'}
+              </span>
+            </div>
+            <div className="pt-3 flex items-center gap-2 text-xs text-emerald-900 font-medium">
+              <CreditCard className="w-4 h-4 text-emerald-700 shrink-0" />
+              <span>
+                <strong>{language === 'te' ? 'భద్రతా డిపాజిట్ (25%):' : 'Advance Payment:'}</strong>{' '}
+                {t('cart.advanceNote', 'Pay only 25% advance now as security deposit. Pay the remaining 75% upon produce collection.')}
+              </span>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 sm:p-5 shadow-sm text-amber-950">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-amber-200/80 pb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
+                  <Info className="w-5 h-5 text-amber-800" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-amber-950 text-base">
+                    {language === 'te' ? 'ముఖ్య గమనిక (ఆర్డర్ నిబంధనలు):' : 'Important Order Policy & Notes:'}
+                  </h3>
+                  <p className="text-amber-800 text-xs font-medium mt-0.5">
+                    {language === 'te' ? 'రైతులకు న్యాయమైన ధర మరియు పారదర్శకత కోసం ఈ నిబంధనలు వర్తిస్తాయి' : 'Fair trade transparency & guaranteed stock allocation policies'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="bg-amber-200/90 text-amber-900 font-semibold px-2.5 py-1 rounded-full text-xs">
+                  {t('cart.minHubOrderNotice', 'Minimum order for Hub Pickup: ₹100')}
+                </span>
+                <span className="bg-amber-200/90 text-amber-900 font-semibold px-2.5 py-1 rounded-full text-xs">
+                  {t('cart.minDeliveryOrderNotice', 'Minimum order for Home Delivery: ₹300')}
+                </span>
+                <span className="bg-amber-200/90 text-amber-900 font-semibold px-2.5 py-1 rounded-full text-xs">
+                  {language === 'te' ? 'రిటైల్ గరిష్ట పరిమితి: కూరగాయకు 5 కేజీలు' : 'Retail limit: max 5 kg per item'}
+                </span>
+              </div>
+            </div>
+
+            <div className="pt-3 flex items-center gap-2 text-xs text-amber-900 font-medium">
+              <CreditCard className="w-4 h-4 text-amber-800 shrink-0" />
+              <span>
+                <strong>{t('cart.advanceDeposit', 'Security Deposit (25% Pay Now)')}:</strong>{' '}
+                {t('cart.advanceNote', 'Pay only 25% advance now as security deposit. Pay the remaining 75% upon produce collection.')}
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Search Bar */}
         <div className="bg-white rounded-2xl shadow-lg p-4 md:p-6 mb-8 border border-gray-100">
           <div className="relative">
@@ -288,18 +367,23 @@ export default function Marketplace() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3 mb-4">
+                    <div className="flex items-center gap-3 mb-2">
                       <QuantitySelector
                         value={quantities[product.id] || 1}
                         onChange={(val) => handleQuantityChange(product.id, val)}
                         min={1}
-                        max={product.available_quantity}
+                        max={isBulkBuyer ? product.available_quantity : Math.min(5, product.available_quantity)}
                         className="w-32"
                       />
                       <span className="text-sm font-medium text-gray-500">
                         {language === 'te' ? 'మొత్తం:' : 'Total:'} <span className="text-gray-900 font-bold">₹{(product.current_price * (quantities[product.id] || 1)).toFixed(2)}</span>
                       </span>
                     </div>
+                    {!isBulkBuyer && product.available_quantity > 5 && (
+                      <p className="text-[11px] text-gray-400 mb-3 font-medium">
+                        {language === 'te' ? 'రిటైల్ వినియోగదారు పరిమితి: గరిష్టంగా 5 కేజీలు' : 'Retail limit: max 5 kg per item'}
+                      </p>
+                    )}
 
                     <button
                       onClick={() => handleAddToCart(product)}
