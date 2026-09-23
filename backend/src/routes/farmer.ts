@@ -406,4 +406,25 @@ router.post('/consultations', upload.single('crop_image'), (req: AuthRequest, re
   }
 });
 
+// 4. Crop Disease Detection - Delete Consultation Case
+router.delete('/consultations/:id', (req: AuthRequest, res) => {
+  try {
+    const consultationId = req.params.id;
+    const consultation: any = db.prepare('SELECT * FROM crop_disease_consultations WHERE id = ?').get(consultationId);
+    if (!consultation) {
+      return res.status(404).json({ error: 'Consultation case not found' });
+    }
+
+    if (consultation.farmer_id !== req.user.id && req.user.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'You are not authorized to delete this consultation case' });
+    }
+
+    db.prepare('DELETE FROM crop_disease_consultations WHERE id = ?').run(consultationId);
+    res.json({ success: true, message: 'Consultation case deleted successfully' });
+  } catch (err) {
+    console.error('Delete consultation error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 export default router;

@@ -74,10 +74,41 @@ export default function LandingPage() {
     }
   };
 
-  const handleDemoFill = (role: Role, user: string, pass: string) => {
+  const handleDemoFill = async (role: Role, user: string, pass: string) => {
     setSelectedRole(role);
     setUsername(user);
     setPassword(pass);
+    setError('');
+
+    try {
+      await login(user, pass, role);
+      showToast(language === 'te' ? 'లాగిన్ విజయవంతమైంది' : 'Login successful', 'success');
+      
+      switch (role) {
+        case 'FARMER':
+          navigate('/farmer');
+          break;
+        case 'CONSUMER':
+          navigate('/consumer');
+          break;
+        case 'COORDINATOR':
+          navigate('/coordinator');
+          break;
+        case 'ADMIN':
+          navigate('/admin');
+          break;
+        case 'ADVISER':
+          navigate('/adviser');
+          break;
+        case 'LARGE_SCALE_CONSUMER':
+          navigate('/large-scale-consumer');
+          break;
+        default:
+          navigate('/');
+      }
+    } catch (err: any) {
+      setError(err.message || (language === 'te' ? 'లాగిన్ విఫలమైంది. దయచేసి వివరాలు సరిచూడండి.' : 'Login failed. Please check your credentials.'));
+    }
   };
 
   const roles: { id: Role; labelKey: string; defaultName: string; icon: React.ReactNode }[] = [
@@ -340,7 +371,7 @@ export default function LandingPage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {[
-                { role: 'FARMER' as Role, user: 'farmer1', pass: 'password123', labelKey: 'role.farmer', defaultLabel: 'Farmer' },
+                { role: 'FARMER' as Role, user: 'farmer3', pass: 'password123', labelKey: 'role.farmer', defaultLabel: 'Farmer' },
                 { role: 'CONSUMER' as Role, user: 'consumer1', pass: 'password123', labelKey: 'role.consumer', defaultLabel: 'Consumer' },
                 { role: 'LARGE_SCALE_CONSUMER' as Role, user: 'bulkbuyer1', pass: 'password123', labelKey: 'role.largeScaleConsumer', defaultLabel: 'Bulk Buyer' },
                 { role: 'ADVISER' as Role, user: 'adviser1', pass: 'password123', labelKey: 'role.adviser', defaultLabel: 'Adviser' },

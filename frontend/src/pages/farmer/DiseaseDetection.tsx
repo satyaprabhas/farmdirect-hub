@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, AlertCircle, CheckCircle2, Clock, UserCheck, Stethoscope, Image, Send, ShieldAlert, Sparkles } from 'lucide-react';
+import { Upload, AlertCircle, CheckCircle2, Clock, UserCheck, Stethoscope, Image, Send, ShieldAlert, Sparkles, Trash2 } from 'lucide-react';
 import api, { getImageUrl } from '../../api/client';
 import { useLanguage } from '../../context/LanguageContext';
 import { useToast } from '../../context/ToastContext';
@@ -57,6 +57,19 @@ export default function DiseaseDetection() {
       const file = e.target.files[0];
       setSelectedFile(file);
       setPreviewUrl(URL.createObjectURL(file));
+    }
+  };
+
+  const handleDeleteCase = async (id: number) => {
+    if (!window.confirm(language === 'te' ? 'ఈ సంప్రదింపు కేసును ఖచ్చితంగా తొలగించాలనుకుంటున్నారా?' : 'Are you sure you want to delete this consultation case?')) {
+      return;
+    }
+    try {
+      await api.delete(`/farmer/consultations/${id}`);
+      showToast(language === 'te' ? 'కేసు విజయవంతంగా తొలగించబడింది' : 'Case deleted successfully', 'success');
+      setCases(prev => prev.filter(c => c.id !== id));
+    } catch (err: any) {
+      showToast(err.response?.data?.error || 'Failed to delete case', 'error');
     }
   };
 
@@ -259,19 +272,29 @@ export default function DiseaseDetection() {
                       <span className="text-xs text-gray-400">• {c.affected_area}</span>
                     </div>
 
-                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${isResolved ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'}`}>
-                      {isResolved ? (
-                        <>
-                          <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
-                          {t('disease.advised', 'Prescription Provided')}
-                        </>
-                      ) : (
-                        <>
-                          <Clock className="w-3.5 h-3.5 text-amber-600" />
-                          {t('disease.pendingReview', 'Under Adviser Review')}
-                        </>
-                      )}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${isResolved ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'}`}>
+                        {isResolved ? (
+                          <>
+                            <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
+                            {t('disease.advised', 'Prescription Provided')}
+                          </>
+                        ) : (
+                          <>
+                            <Clock className="w-3.5 h-3.5 text-amber-600" />
+                            {t('disease.pendingReview', 'Under Adviser Review')}
+                          </>
+                        )}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteCase(c.id)}
+                        className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors cursor-pointer"
+                        title={language === 'te' ? 'కేసును తొలగించండి' : 'Delete case'}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
 
                   <div className="flex flex-col sm:flex-row gap-4">

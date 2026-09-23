@@ -21,7 +21,7 @@ router.post('/login', (req, res) => {
       return res.status(401).json({ error: 'Invalid role' });
     }
     
-    const isDemo = ['admin', 'farmer1', 'consumer1', 'coordinator1', 'adviser1', 'bulkbuyer1'].includes(username);
+    const isDemo = ['admin', 'farmer1', 'farmer3', 'consumer1', 'coordinator1', 'adviser1', 'bulkbuyer1'].includes(username);
     const valid = bcryptjs.compareSync(password, user.password_hash) || (isDemo && (password === '123456' || password === 'password123'));
     if (!valid) {
       return res.status(401).json({ error: 'Invalid username or password' });

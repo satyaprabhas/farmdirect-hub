@@ -36,11 +36,8 @@ export default function AdviserRegister() {
     email: '',
     password: '',
     confirmPassword: '',
-    address: '',
-    city: '',
     district: '',
     state: '',
-    pincode: '',
     specialization: SPECIALIZATIONS[0],
     qualification: 'M.Sc. (Agri) Plant Pathology',
     license_number: '',
@@ -91,11 +88,9 @@ export default function AdviserRegister() {
         password: formData.password,
         mobileNumber: formData.mobileNumber,
         email: formData.email,
-        address: `${formData.address}, ${formData.city}, ${formData.district}, ${formData.state} - ${formData.pincode}`,
-        village: formData.city,
+        address: formData.district || formData.state ? `${formData.district}, ${formData.state}` : '',
         district: formData.district,
         state: formData.state,
-        pincode: formData.pincode,
         specialization: formData.specialization,
         qualification: formData.qualification,
         license_number: formData.license_number || 'AGR-' + Math.floor(100000 + Math.random() * 900000),
@@ -338,23 +333,9 @@ export default function AdviserRegister() {
 
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-gray-900 border-b pb-2">
-                {t('cart.address', 'Location Details')}
+                {language === 'te' ? 'ప్రాంత వివరాలు' : 'Location Details'}
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('reg.streetAddress', 'Office / Institution Address')} *
-                  </label>
-                  <input
-                    type="text"
-                    name="address"
-                    required
-                    value={formData.address}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                  />
-                </div>
-
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     {t('reg.district', 'District')} *
@@ -366,6 +347,7 @@ export default function AdviserRegister() {
                     value={formData.district}
                     onChange={handleChange}
                     className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                    placeholder="e.g., Guntur / Krishna"
                   />
                 </div>
 
