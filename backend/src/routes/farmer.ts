@@ -427,4 +427,90 @@ router.delete('/consultations/:id', (req: AuthRequest, res) => {
   }
 });
 
+// 5. Farmer Support - Get Farmer's Soil & Nutrient Consultations
+router.get('/soil-reports', (req: AuthRequest, res) => {
+  try {
+    const reports = db.prepare(`
+      SELECT s.*,
+             u.full_name as adviser_name, u.mobile_number as adviser_mobile,
+             ap.specialization as adviser_specialization, ap.qualification as adviser_qualification
+      FROM soil_nutrient_consultations s
+      LEFT JOIN users u ON s.adviser_id = u.id
+      LEFT JOIN adviser_profiles ap ON u.id = ap.user_id
+      WHERE s.farmer_id = ?
+      ORDER BY s.created_at DESC
+    `).all(req.user.id);
+
+    res.json(reports);
+  } catch (err) {
+    console.error('Fetch soil reports error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// 6. Farmer Support - Submit Soil Test Report for Nutrient Advisory
+router.post('/soil-reports', upload.single('soil_report_image'), (req: AuthRequest, res) => {
+  try {
+    const { crop_name, land_area, soil_type, fertilizer_preference, farmer_notes } = req.body;
+    if (!crop_name || !land_area) {
+      return res.status(400).json({ error: 'Crop name and land area are required' });
+    }
+
+    const soil_report_image = req.file ? `/uploads/${req.file.filename}` : (req.body.soil_report_image || '/uploads/1789360871472.jpeg');
+
+    const info = db.prepare(`
+      INSERT INTO soil_nutrient_consultations (
+        farmer_id, crop_name, land_area, soil_type, fertilizer_preference, soil_report_image, farmer_notes, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDING')
+    `).run(
+      req.user.id,
+      crop_name,
+      land_area,
+      soil_type || 'General Agricultural Soil',
+      fertilizer_preference || 'ORGANIC',
+      soil_report_image,
+      farmer_notes || null
+    );
+
+    // Notify all active advisers
+    const advisers = db.prepare("SELECT id FROM users WHERE role = 'ADVISER'").all();
+    advisers.forEach((adv: any) => {
+      db.prepare(`
+        INSERT INTO notifications (user_id, title, message)
+        VALUES (?, 'New Soil & Nutrient Advisory Request', ?)
+      `).run(adv.id, `Farmer submitted soil test report for ${crop_name} (${land_area}) with preference for ${fertilizer_preference || 'Organic'} fertilizer. Please provide fertilizer advice.`);
+    });
+
+    res.status(201).json({
+      success: true,
+      id: info.lastInsertRowid,
+      message: 'Soil report submitted successfully! An agricultural adviser will analyze and recommend optimal nutrient dosages.'
+    });
+  } catch (err) {
+    console.error('Submit soil report error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// 7. Farmer Support - Delete Soil Consultation Case
+router.delete('/soil-reports/:id', (req: AuthRequest, res) => {
+  try {
+    const reportId = req.params.id;
+    const report: any = db.prepare('SELECT * FROM soil_nutrient_consultations WHERE id = ?').get(reportId);
+    if (!report) {
+      return res.status(404).json({ error: 'Soil report case not found' });
+    }
+
+    if (report.farmer_id !== req.user.id && req.user.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'You are not authorized to delete this soil report case' });
+    }
+
+    db.prepare('DELETE FROM soil_nutrient_consultations WHERE id = ?').run(reportId);
+    res.json({ success: true, message: 'Soil report case deleted successfully' });
+  } catch (err) {
+    console.error('Delete soil report error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 export default router;

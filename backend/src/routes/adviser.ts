@@ -15,11 +15,18 @@ router.get('/stats', (req: AuthRequest, res) => {
     const resolvedCases = (db.prepare("SELECT COUNT(*) as c FROM crop_disease_consultations WHERE status IN ('ANALYZED', 'RESOLVED')").get() as any).c;
     const myAdvisedCases = (db.prepare("SELECT COUNT(*) as c FROM crop_disease_consultations WHERE adviser_id = ?").get(req.user.id) as any).c;
 
+    const totalSoilCases = (db.prepare("SELECT COUNT(*) as c FROM soil_nutrient_consultations").get() as any).c;
+    const pendingSoilCases = (db.prepare("SELECT COUNT(*) as c FROM soil_nutrient_consultations WHERE status = 'PENDING'").get() as any).c;
+    const advisedSoilCases = (db.prepare("SELECT COUNT(*) as c FROM soil_nutrient_consultations WHERE status = 'ADVISED'").get() as any).c;
+
     res.json({
       total_cases: totalCases,
       pending_cases: pendingCases,
       resolved_cases: resolvedCases,
-      my_advised_cases: myAdvisedCases
+      my_advised_cases: myAdvisedCases,
+      total_soil_cases: totalSoilCases,
+      pending_soil_cases: pendingSoilCases,
+      advised_soil_cases: advisedSoilCases
     });
   } catch (err) {
     res.status(500).json({ error: 'Internal server error' });
@@ -126,7 +133,117 @@ router.post('/cases/:id/advise', (req: AuthRequest, res) => {
   }
 });
 
-// 5. Get Adviser Profile
+// 5. Farmer Support - Get All Soil Nutrient Reports for Advisers
+router.get('/soil-reports', (req: AuthRequest, res) => {
+  try {
+    const { status, crop } = req.query;
+    let query = `
+      SELECT s.*,
+             u.full_name as farmer_name, u.mobile_number as farmer_mobile,
+             u.village as farmer_village, u.district as farmer_district, u.state as farmer_state,
+             adv.full_name as adviser_name
+      FROM soil_nutrient_consultations s
+      JOIN users u ON s.farmer_id = u.id
+      LEFT JOIN users adv ON s.adviser_id = adv.id
+      WHERE 1=1
+    `;
+    const params: any[] = [];
+
+    if (status && status !== 'ALL') {
+      query += ` AND s.status = ?`;
+      params.push(status);
+    }
+    if (crop && crop !== 'All') {
+      query += ` AND s.crop_name = ?`;
+      params.push(crop);
+    }
+
+    query += ` ORDER BY CASE WHEN s.status = 'PENDING' THEN 0 ELSE 1 END, s.created_at DESC`;
+
+    const reports = db.prepare(query).all(...params);
+    res.json(reports);
+  } catch (err) {
+    console.error('Error fetching soil reports for adviser:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// 6. Farmer Support - Submit Soil Nutrient Prescription & Advice
+router.post('/soil-reports/:id/advise', (req: AuthRequest, res) => {
+  try {
+    const {
+      fertilizer_advice,
+      general_prescription,
+      nitrogen_advice,
+      phosphorus_advice,
+      potassium_advice,
+      micronutrients_advice,
+      organic_advice,
+      adviser_notes
+    } = req.body;
+
+    const finalAdvice = fertilizer_advice || general_prescription;
+    if (!finalAdvice && !nitrogen_advice && !phosphorus_advice && !potassium_advice) {
+      return res.status(400).json({ error: 'Please provide fertilizer recommendation and advice based on farmer preference.' });
+    }
+
+    // Check if adviser is verified by Admin
+    const adviserUser: any = db.prepare("SELECT * FROM users WHERE id = ?").get(req.user.id);
+    if (!adviserUser || !adviserUser.is_verified) {
+      return res.status(403).json({
+        error: 'Your adviser account is pending verification and approval by the Admin. You cannot provide advice until approved.'
+      });
+    }
+
+    const currentCase: any = db.prepare("SELECT * FROM soil_nutrient_consultations WHERE id = ?").get(req.params.id);
+    if (!currentCase) return res.status(404).json({ error: 'Soil report case not found' });
+
+    db.prepare(`
+      UPDATE soil_nutrient_consultations
+      SET fertilizer_advice = ?,
+          general_prescription = ?,
+          nitrogen_advice = ?,
+          phosphorus_advice = ?,
+          potassium_advice = ?,
+          micronutrients_advice = ?,
+          organic_advice = ?,
+          adviser_notes = ?,
+          adviser_id = ?,
+          status = 'ADVISED',
+          advised_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(
+      finalAdvice || 'Custom fertilizer and nutrient advice prepared by specialist.',
+      finalAdvice || 'Custom fertilizer and nutrient advice prepared by specialist.',
+      nitrogen_advice || null,
+      phosphorus_advice || null,
+      potassium_advice || null,
+      micronutrients_advice || null,
+      organic_advice || null,
+      adviser_notes || null,
+      req.user.id,
+      req.params.id
+    );
+
+    // Notify farmer
+    const adviserName = adviserUser ? adviserUser.full_name : 'Agricultural Adviser';
+    db.prepare(`
+      INSERT INTO notifications (user_id, title, message)
+      VALUES (?, ?, ?)
+    `).run(
+      currentCase.farmer_id,
+      'Soil & Nutrient Advisory Received 🧪',
+      `Expert ${adviserName} provided customized nutrient recommendations for your ${currentCase.crop_name} (${currentCase.land_area}).`
+    );
+
+    res.json({ success: true, message: 'Nutrient prescription and advice successfully sent to the farmer!' });
+  } catch (err) {
+    console.error('Submit soil advice error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// 7. Get Adviser Profile
 router.get('/profile', (req: AuthRequest, res) => {
   try {
     const profile: any = db.prepare(`

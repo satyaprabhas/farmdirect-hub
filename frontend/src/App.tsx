@@ -61,6 +61,7 @@ import FarmerOrders from './pages/farmer/FarmerOrders';
 import FarmerEarnings from './pages/farmer/FarmerEarnings';
 import FarmerProfile from './pages/farmer/FarmerProfile';
 import FarmerNotifications from './pages/farmer/FarmerNotifications';
+import FarmerSupport from './pages/farmer/FarmerSupport';
 
 // Adviser pages
 import AdviserDashboard from './pages/adviser/AdviserDashboard';
@@ -85,7 +86,7 @@ import CoordCustomers from './pages/coordinator/CoordCustomers';
 import CoordReports from './pages/coordinator/CoordReports';
 import CoordNotifications from './pages/coordinator/CoordNotifications';
 
-import { TrendingUp, Stethoscope, GraduationCap, Building2 } from 'lucide-react';
+import { TrendingUp, Stethoscope, GraduationCap, Building2, FlaskConical } from 'lucide-react';
 
 const ProtectedRoute = ({ allowedRoles }: { allowedRoles: string[] }) => {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -131,6 +132,7 @@ const getRoleMenuItems = (role: string, t: (k: string, fb?: string) => string) =
         { path: '/farmer', label: t('menu.dashboard', 'Dashboard'), icon: <LayoutDashboard size={20} /> },
         { path: '/farmer/crop-advisory', label: t('menu.cropAdvisory', 'Crop Advisory'), icon: <TrendingUp size={20} /> },
         { path: '/farmer/disease-detection', label: t('menu.diseaseDetection', 'Disease Detection'), icon: <Stethoscope size={20} /> },
+        { path: '/farmer/support', label: t('menu.farmerSupport', 'Farmer Support'), icon: <FlaskConical size={20} /> },
         { path: '/farmer/produce', label: t('menu.myProduce', 'My Produce'), icon: <Package size={20} /> },
         { path: '/farmer/add-produce', label: t('menu.addProduce', 'Add Produce'), icon: <PlusCircle size={20} /> },
         { path: '/farmer/orders', label: t('menu.myOrders', 'My Orders'), icon: <ClipboardList size={20} /> },
@@ -323,6 +325,7 @@ export default function App() {
                   <Route path="/farmer" element={<FarmerDashboard />} />
                   <Route path="/farmer/crop-advisory" element={<CropAdvisory />} />
                   <Route path="/farmer/disease-detection" element={<DiseaseDetection />} />
+                  <Route path="/farmer/support" element={<FarmerSupport />} />
                   <Route path="/farmer/produce" element={<MyProduce />} />
                   <Route path="/farmer/add-produce" element={<AddProduce />} />
                   <Route path="/farmer/orders" element={<FarmerOrders />} />

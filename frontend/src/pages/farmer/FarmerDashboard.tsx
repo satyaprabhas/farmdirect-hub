@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Sprout, Package, ClipboardList, CheckCircle, IndianRupee, Plus, AlertTriangle } from 'lucide-react';
+import { Sprout, Package, ClipboardList, CheckCircle, IndianRupee, Plus, AlertTriangle, FlaskConical } from 'lucide-react';
 import api from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -138,24 +138,24 @@ const FarmerDashboard: React.FC = () => {
         />
       </div>
 
-      {/* New Advisory & Disease Detection Feature Banners */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Advisory, Disease Detection & Farmer Support Feature Banners */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div 
           onClick={() => navigate('/farmer/crop-advisory')}
           className="bg-gradient-to-r from-emerald-500 to-green-600 rounded-xl p-5 text-white shadow-sm hover:shadow-md transition-all cursor-pointer flex items-center justify-between group"
         >
           <div className="space-y-1">
             <span className="text-xs font-semibold uppercase tracking-wider text-emerald-100 bg-white/20 px-2 py-0.5 rounded">
-              {language === 'te' ? 'లాభదాయక సాగు సలహాలు' : 'Profit Optimization'}
+              {language === 'te' ? 'లాభదాయక సాగు' : 'Profit Optimization'}
             </span>
             <h3 className="text-lg font-bold group-hover:underline">
-              {t('advisory.title', 'Crop Cultivation Advisory')}
+              {t('advisory.title', 'Crop Advisory')}
             </h3>
-            <p className="text-xs text-emerald-100 max-w-sm">
-              {t('advisory.subtitle', 'See which crops yield highest profits based on market trends and demand statistics.')}
+            <p className="text-xs text-emerald-100 max-w-sm line-clamp-2">
+              {t('advisory.subtitle', 'See which crops yield highest profits based on market trends.')}
             </p>
           </div>
-          <div className="bg-white/20 p-3 rounded-full group-hover:scale-110 transition-transform">
+          <div className="bg-white/20 p-3 rounded-full group-hover:scale-110 transition-transform shrink-0">
             <Sprout className="w-6 h-6 text-white" />
           </div>
         </div>
@@ -166,17 +166,37 @@ const FarmerDashboard: React.FC = () => {
         >
           <div className="space-y-1">
             <span className="text-xs font-semibold uppercase tracking-wider text-rose-100 bg-white/20 px-2 py-0.5 rounded">
-              {language === 'te' ? 'తెగుళ్ల నివారణ & సలహాదారు' : 'Adviser Consultation'}
+              {language === 'te' ? 'తెగుళ్ల నివారణ' : 'Disease Detection'}
             </span>
             <h3 className="text-lg font-bold group-hover:underline">
               {t('disease.title', 'Crop Disease Detection')}
             </h3>
-            <p className="text-xs text-rose-100 max-w-sm">
-              {t('disease.subtitle', 'Upload photo of diseased crop and receive prescription from certified agricultural advisers.')}
+            <p className="text-xs text-rose-100 max-w-sm line-clamp-2">
+              {t('disease.subtitle', 'Upload photo of diseased crop and receive prescription.')}
             </p>
           </div>
-          <div className="bg-white/20 p-3 rounded-full group-hover:scale-110 transition-transform">
+          <div className="bg-white/20 p-3 rounded-full group-hover:scale-110 transition-transform shrink-0">
             <ClipboardList className="w-6 h-6 text-white" />
+          </div>
+        </div>
+
+        <div 
+          onClick={() => navigate('/farmer/support')}
+          className="bg-gradient-to-r from-teal-600 to-cyan-700 rounded-xl p-5 text-white shadow-sm hover:shadow-md transition-all cursor-pointer flex items-center justify-between group"
+        >
+          <div className="space-y-1">
+            <span className="text-xs font-semibold uppercase tracking-wider text-teal-100 bg-white/20 px-2 py-0.5 rounded">
+              {language === 'te' ? 'నేల & ఎరువుల ప్రణాళిక' : 'Soil & Nutrients'}
+            </span>
+            <h3 className="text-lg font-bold group-hover:underline">
+              {t('menu.farmerSupport', 'Farmer Support')}
+            </h3>
+            <p className="text-xs text-teal-100 max-w-sm line-clamp-2">
+              {t('support.subtitle', 'Upload soil report to get custom N-P-K nutrient dosage and save fertilizer cost.')}
+            </p>
+          </div>
+          <div className="bg-white/20 p-3 rounded-full group-hover:scale-110 transition-transform shrink-0">
+            <FlaskConical className="w-6 h-6 text-white" />
           </div>
         </div>
       </div>

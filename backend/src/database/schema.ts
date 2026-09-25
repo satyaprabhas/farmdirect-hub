@@ -57,6 +57,29 @@ export function initializeDatabase() {
       advised_at DATETIME
     );
 
+    CREATE TABLE IF NOT EXISTS soil_nutrient_consultations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      farmer_id INTEGER REFERENCES users(id),
+      crop_name TEXT NOT NULL,
+      land_area TEXT NOT NULL,
+      soil_type TEXT,
+      fertilizer_preference TEXT DEFAULT 'ORGANIC',
+      soil_report_image TEXT NOT NULL,
+      farmer_notes TEXT,
+      status TEXT DEFAULT 'PENDING' CHECK(status IN ('PENDING','ADVISED')),
+      adviser_id INTEGER REFERENCES users(id),
+      fertilizer_advice TEXT,
+      nitrogen_advice TEXT,
+      phosphorus_advice TEXT,
+      potassium_advice TEXT,
+      micronutrients_advice TEXT,
+      organic_advice TEXT,
+      general_prescription TEXT,
+      adviser_notes TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      advised_at DATETIME
+    );
+
     CREATE TABLE IF NOT EXISTS vegetables (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT UNIQUE NOT NULL,
@@ -198,4 +221,6 @@ export function initializeDatabase() {
   try { db.exec(`ALTER TABLE orders ADD COLUMN advance_amount REAL DEFAULT 0;`); } catch (_) {}
   try { db.exec(`ALTER TABLE orders ADD COLUMN remaining_amount REAL DEFAULT 0;`); } catch (_) {}
   try { db.exec(`ALTER TABLE orders ADD COLUMN order_type TEXT DEFAULT 'RETAIL';`); } catch (_) {}
+  try { db.exec(`ALTER TABLE soil_nutrient_consultations ADD COLUMN fertilizer_preference TEXT DEFAULT 'ORGANIC';`); } catch (_) {}
+  try { db.exec(`ALTER TABLE soil_nutrient_consultations ADD COLUMN fertilizer_advice TEXT;`); } catch (_) {}
 }
