@@ -18,12 +18,14 @@ import {
   ChevronRight,
   Send,
   Droplets,
-  Check
+  Check,
+  Camera
 } from 'lucide-react';
 import api, { getImageUrl } from '../../api/client';
 import { useLanguage } from '../../context/LanguageContext';
 import { useToast } from '../../context/ToastContext';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import CameraCaptureModal from '../../components/common/CameraCaptureModal';
 
 interface SoilConsultationCase {
   id: number;
@@ -54,7 +56,6 @@ interface SoilConsultationCase {
 
 const COMMON_CROPS = [
   'Tomatoes',
-  'Paddy / Rice',
   'Chillies',
   'Cotton',
   'Maize',
@@ -66,7 +67,6 @@ const COMMON_CROPS = [
   'Cabbage',
   'Cauliflower',
   'Sugarcane',
-  'Pulses / Red Gram',
   'Cucumbers',
   'Bottle Gourd'
 ];
@@ -90,7 +90,7 @@ export default function FarmerSupport() {
   const [submitting, setSubmitting] = useState(false);
 
   // Form states
-  const [cropName, setCropName] = useState('Paddy / Rice');
+  const [cropName, setCropName] = useState('Tomatoes');
   const [isCustomCrop, setIsCustomCrop] = useState(false);
   const [customCropName, setCustomCropName] = useState('');
   const [landArea, setLandArea] = useState('2 Acres');
@@ -99,6 +99,7 @@ export default function FarmerSupport() {
   const [farmerNotes, setFarmerNotes] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
 
   // Modal for previewing photo
   const [viewingImage, setViewingImage] = useState<string | null>(null);
@@ -426,24 +427,41 @@ export default function FarmerSupport() {
               </label>
 
               {!previewUrl ? (
-                <label className="border-2 border-dashed border-emerald-300 dark:border-emerald-700/60 hover:border-emerald-500 bg-emerald-50/40 dark:bg-emerald-950/20 rounded-2xl p-5 flex flex-col items-center justify-center cursor-pointer transition-all hover:bg-emerald-50/80">
-                  <Upload className="w-8 h-8 text-emerald-600 mb-2" />
-                  <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">
-                    {language === 'te' ? 'నేల పరీక్ష పత్రం ఫోటోను ఎంచుకోండి' : 'Upload photo of Soil Test Certificate'}
-                  </span>
-                  <span className="text-[11px] text-gray-500 mt-1">PNG, JPG, JPEG (Max 10MB)</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    className="hidden"
-                  />
-                </label>
+                <div className="space-y-2.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {/* Take Photo with Camera Button */}
+                    <button
+                      type="button"
+                      onClick={() => setIsCameraOpen(true)}
+                      className="p-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-2xl flex items-center justify-center gap-2 shadow-sm font-semibold text-xs sm:text-sm transition-all cursor-pointer group active:scale-[0.98]"
+                    >
+                      <Camera className="w-5 h-5 group-hover:scale-110 transition-transform text-white" />
+                      <span>{language === 'te' ? 'కెమెరాతో ఫోటో తీయండి' : 'Take Photo with Camera'}</span>
+                    </button>
+
+                    {/* Upload from Device Button */}
+                    <label className="p-3.5 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100/80 dark:hover:bg-emerald-900/50 text-emerald-800 dark:text-emerald-200 border-2 border-dashed border-emerald-300 dark:border-emerald-700/60 rounded-2xl flex items-center justify-center gap-2 font-semibold text-xs sm:text-sm transition-all cursor-pointer group">
+                      <Upload className="w-5 h-5 group-hover:scale-110 transition-transform text-emerald-600 dark:text-emerald-400" />
+                      <span>{language === 'te' ? 'డివైస్ నుండి ఎంచుకోండి' : 'Choose from Device'}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        onChange={handleFileChange}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                  <p className="text-[11px] text-gray-500 text-center">
+                    {language === 'te' ? 'నేల పరీక్ష పత్రం లేదా కార్డు ఫోటోను స్పష్టంగా తీయండి / అప్‌లోడ్ చేయండి (గరిష్టంగా 10MB)' : 'JPG, PNG, WEBP up to 10MB • Capture clear photo of your Soil Health Card'}
+                  </p>
+                </div>
               ) : (
                 <div className="relative rounded-2xl overflow-hidden border-2 border-emerald-500 shadow-md group">
                   <img
                     src={previewUrl}
                     alt="Soil test report preview"
+                    onError={(e) => { (e.target as HTMLImageElement).src = '/uploads/1789360871472.jpeg'; }}
                     className="w-full h-44 object-cover"
                   />
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
@@ -465,7 +483,7 @@ export default function FarmerSupport() {
                     </button>
                   </div>
                   <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-sm text-white text-[11px] px-2 py-0.5 rounded">
-                    {selectedFile?.name}
+                    {selectedFile?.name || 'Captured Photo'}
                   </div>
                 </div>
               )}
@@ -628,6 +646,7 @@ export default function FarmerSupport() {
                             <img
                               src={getImageUrl(r.soil_report_image)}
                               alt="Soil report"
+                              onError={(e) => { (e.target as HTMLImageElement).src = '/uploads/1789360871472.jpeg'; }}
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                             />
                             <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
@@ -729,11 +748,23 @@ export default function FarmerSupport() {
             <img
               src={viewingImage}
               alt="Full soil report"
+              onError={(e) => { (e.target as HTMLImageElement).src = '/uploads/1789360871472.jpeg'; }}
               className="max-h-[85vh] w-auto object-contain mx-auto"
             />
           </div>
         </div>
       )}
+
+      {/* Camera Capture Modal */}
+      <CameraCaptureModal
+        isOpen={isCameraOpen}
+        onClose={() => setIsCameraOpen(false)}
+        onCapture={(file, dataUrl) => {
+          setSelectedFile(file);
+          setPreviewUrl(dataUrl);
+        }}
+        title={language === 'te' ? 'నేల పరీక్ష పత్రం ఫోటో తీయండి' : 'Capture Soil Health Card / Report'}
+      />
     </div>
   );
 }

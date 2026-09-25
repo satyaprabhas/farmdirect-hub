@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, AlertCircle, CheckCircle2, Clock, UserCheck, Stethoscope, Image, Send, ShieldAlert, Sparkles, Trash2 } from 'lucide-react';
+import { Upload, AlertCircle, CheckCircle2, Clock, UserCheck, Stethoscope, Image, Send, ShieldAlert, Sparkles, Trash2, Camera } from 'lucide-react';
 import api, { getImageUrl } from '../../api/client';
 import { useLanguage } from '../../context/LanguageContext';
 import { useToast } from '../../context/ToastContext';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import CameraCaptureModal from '../../components/common/CameraCaptureModal';
 
 interface ConsultationCase {
   id: number;
@@ -36,6 +37,7 @@ export default function DiseaseDetection() {
   const [affectedArea, setAffectedArea] = useState('0.5 acre');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
 
   const fetchCases = async () => {
     try {
@@ -180,41 +182,63 @@ export default function DiseaseDetection() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                 {t('disease.cropPhoto', 'Crop Photo (Clear close-up)')}
               </label>
-              <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-4 text-center hover:border-rose-400 transition-colors">
-                {previewUrl ? (
-                  <div className="relative">
-                    <img
-                      src={previewUrl}
-                      alt="Crop preview"
-                      className="w-full h-40 object-cover rounded-lg mb-2"
-                    />
+
+              {previewUrl ? (
+                <div className="relative rounded-2xl overflow-hidden border-2 border-rose-500 shadow-md">
+                  <img
+                    src={previewUrl}
+                    alt="Crop preview"
+                    onError={(e) => { (e.target as HTMLImageElement).src = '/uploads/1789361063839.jpeg'; }}
+                    className="w-full h-44 object-cover"
+                  />
+                  <div className="absolute top-2 right-2 flex items-center gap-2">
                     <button
                       type="button"
                       onClick={() => { setSelectedFile(null); setPreviewUrl(null); }}
-                      className="text-xs text-rose-600 hover:underline font-medium"
+                      className="p-1.5 bg-red-600 hover:bg-red-700 text-white rounded-full transition-colors cursor-pointer shadow-md"
+                      title={language === 'te' ? 'ఫోటోను తొలగించండి' : 'Remove photo'}
                     >
-                      {language === 'te' ? 'మరొక ఫోటో ఎంచుకోండి' : 'Change photo'}
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
-                ) : (
-                  <div>
-                    <Image className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                    <label className="cursor-pointer text-xs font-semibold text-rose-600 hover:text-rose-500">
-                      <span>{language === 'te' ? 'ఫోటోను ఎంచుకోండి / కెమెరా ద్వారా తీయండి' : 'Select photo / Take photo'}</span>
+                  <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-sm text-white text-[11px] px-2.5 py-0.5 rounded">
+                    {selectedFile?.name || 'Captured Photo'}
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {/* Take Photo with Camera Button */}
+                    <button
+                      type="button"
+                      onClick={() => setIsCameraOpen(true)}
+                      className="p-3.5 bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-700 hover:to-amber-700 text-white rounded-2xl flex items-center justify-center gap-2 shadow-sm font-semibold text-xs sm:text-sm transition-all cursor-pointer group active:scale-[0.98]"
+                    >
+                      <Camera className="w-5 h-5 group-hover:scale-110 transition-transform text-white" />
+                      <span>{language === 'te' ? 'కెమెరాతో ఫోటో తీయండి' : 'Take Photo with Camera'}</span>
+                    </button>
+
+                    {/* Choose from Device */}
+                    <label className="p-3.5 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100/80 dark:hover:bg-rose-900/50 text-rose-800 dark:text-rose-200 border-2 border-dashed border-rose-300 dark:border-rose-700/60 rounded-2xl flex items-center justify-center gap-2 font-semibold text-xs sm:text-sm transition-all cursor-pointer group">
+                      <Upload className="w-5 h-5 group-hover:scale-110 transition-transform text-rose-600 dark:text-rose-400" />
+                      <span>{language === 'te' ? 'డివైస్ నుండి ఎంచుకోండి' : 'Choose from Device'}</span>
                       <input
                         type="file"
                         accept="image/*"
+                        capture="environment"
                         onChange={handleFileChange}
                         className="hidden"
                       />
                     </label>
-                    <p className="text-[11px] text-gray-400 mt-1">PNG, JPG up to 10MB</p>
                   </div>
-                )}
-              </div>
+                  <p className="text-[11px] text-gray-400 text-center">
+                    {language === 'te' ? 'పంటలో తెగులు లేదా సమస్య ఉన్న భాగాన్ని స్పష్టంగా తీయండి / అప్‌లోడ్ చేయండి (గరిష్టంగా 10MB)' : 'PNG, JPG up to 10MB • Clear close-up of affected leaf/fruit/stem'}
+                  </p>
+                </div>
+              )}
             </div>
 
             <button
@@ -302,6 +326,7 @@ export default function DiseaseDetection() {
                       <img
                         src={getImageUrl(c.image_url)}
                         alt="Affected Crop"
+                        onError={(e) => { (e.target as HTMLImageElement).src = '/uploads/1789361063839.jpeg'; }}
                         className="w-full sm:w-32 h-28 object-cover rounded-xl border border-gray-200 dark:border-gray-700 shrink-0"
                       />
                     )}
@@ -372,6 +397,17 @@ export default function DiseaseDetection() {
           )}
         </div>
       </div>
+
+      {/* Camera Capture Modal */}
+      <CameraCaptureModal
+        isOpen={isCameraOpen}
+        onClose={() => setIsCameraOpen(false)}
+        onCapture={(file, dataUrl) => {
+          setSelectedFile(file);
+          setPreviewUrl(dataUrl);
+        }}
+        title={language === 'te' ? 'పంట తెగులు ఫోటో తీయండి' : 'Capture Affected Crop Photo'}
+      />
     </div>
   );
 }

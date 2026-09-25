@@ -397,6 +397,7 @@ export default function AdviserDashboard() {
                           <img 
                             src={getImageUrl(c.image_url)} 
                             alt="Farmer crop photo" 
+                            onError={(e) => { (e.target as HTMLImageElement).src = '/uploads/1789360871472.jpeg'; }}
                             className="w-full h-full object-cover"
                           />
                         ) : (
@@ -549,6 +550,7 @@ export default function AdviserDashboard() {
                             <img 
                               src={getImageUrl(s.soil_report_image)} 
                               alt="Soil test report photo" 
+                              onError={(e) => { (e.target as HTMLImageElement).src = '/uploads/1789360871472.jpeg'; }}
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                             />
                             <button
@@ -706,6 +708,7 @@ export default function AdviserDashboard() {
                   <img 
                     src={getImageUrl(activeCase.image_url)} 
                     alt="Affected crop preview" 
+                    onError={(e) => { (e.target as HTMLImageElement).src = '/uploads/1789360871472.jpeg'; }}
                     className="w-24 h-24 object-cover rounded-lg shrink-0 border border-gray-300"
                   />
                 ) : (
@@ -829,6 +832,7 @@ export default function AdviserDashboard() {
                     <img 
                       src={getImageUrl(activeSoilReport.soil_report_image)} 
                       alt="Soil report preview" 
+                      onError={(e) => { (e.target as HTMLImageElement).src = '/uploads/1789360871472.jpeg'; }}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                     />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
@@ -973,6 +977,7 @@ export default function AdviserDashboard() {
             <img
               src={viewingImage}
               alt="Full soil report view"
+              onError={(e) => { (e.target as HTMLImageElement).src = '/uploads/1789360871472.jpeg'; }}
               className="max-h-[85vh] w-auto object-contain mx-auto"
             />
           </div>

@@ -4,6 +4,7 @@ import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { authorizeRoles } from '../middleware/roleGuard';
 import multer from 'multer';
 import path from 'path';
+import fs from 'fs';
 
 const router = express.Router();
 router.use(authenticateToken);
@@ -14,6 +15,26 @@ const storage = multer.diskStorage({
   filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname))
 });
 const upload = multer({ storage });
+
+function saveBase64Image(dataString: string | undefined): string | null {
+  if (!dataString || typeof dataString !== 'string' || !dataString.startsWith('data:image/')) return null;
+  try {
+    const matches = dataString.match(/^data:image\/([a-zA-Z0-9]+);base64,(.+)$/);
+    if (!matches || matches.length !== 3) return null;
+    const ext = matches[1] === 'jpeg' ? 'jpg' : matches[1];
+    const buffer = Buffer.from(matches[2], 'base64');
+    const filename = `${Date.now()}_camera.${ext}`;
+    const uploadDir = path.join(__dirname, '../uploads/');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    fs.writeFileSync(path.join(uploadDir, filename), buffer);
+    return `/uploads/${filename}`;
+  } catch (e) {
+    console.error('Error saving base64 image:', e);
+    return null;
+  }
+}
 
 router.get('/dashboard', (req: AuthRequest, res) => {
   try {
@@ -358,7 +379,16 @@ router.post('/consultations', upload.single('crop_image'), (req: AuthRequest, re
       return res.status(400).json({ error: 'Crop name and symptoms description are required' });
     }
 
-    const image_url = req.file ? `/uploads/${req.file.filename}` : (req.body.image_url || '/uploads/1789361063839.jpeg');
+    let image_url = req.file ? `/uploads/${req.file.filename}` : null;
+    if (!image_url && req.body.crop_image) {
+      image_url = saveBase64Image(req.body.crop_image);
+    }
+    if (!image_url && req.body.image_url) {
+      image_url = saveBase64Image(req.body.image_url) || req.body.image_url;
+    }
+    if (!image_url) {
+      image_url = '/uploads/1789361063839.jpeg';
+    }
 
     // Rule-based diagnostic screening
     let preliminaryDiagnosis = 'Analyzing with Agricultural Experts';
@@ -456,7 +486,13 @@ router.post('/soil-reports', upload.single('soil_report_image'), (req: AuthReque
       return res.status(400).json({ error: 'Crop name and land area are required' });
     }
 
-    const soil_report_image = req.file ? `/uploads/${req.file.filename}` : (req.body.soil_report_image || '/uploads/1789360871472.jpeg');
+    let soil_report_image = req.file ? `/uploads/${req.file.filename}` : null;
+    if (!soil_report_image && req.body.soil_report_image) {
+      soil_report_image = saveBase64Image(req.body.soil_report_image) || req.body.soil_report_image;
+    }
+    if (!soil_report_image) {
+      soil_report_image = '/uploads/1789360871472.jpeg';
+    }
 
     const info = db.prepare(`
       INSERT INTO soil_nutrient_consultations (
